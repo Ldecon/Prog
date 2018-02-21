@@ -62,6 +62,20 @@ class Graph:
 				if n.cover:
 					print('()', end="")
 			print()
+			
+	def printgfile(self):
+		f=open("Graph.txt","w")
+		for a in self.matnodes:
+			x=self.getnode(a)
+			f.write(x.pos)
+			f.write(':')
+			for n in x.adj:
+				f.write(' ')
+				f.write(n.pos)
+				if n.cover:
+					f.write('()')
+			f.write('\n')
+		f.close()	
 
 class Environment:
 	def __init__(self,n):
@@ -89,5 +103,8 @@ class Environment:
 		
 		
 		g.printg()
+		g.printgfile()
+		
 
 e=Environment(7)
+
