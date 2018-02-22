@@ -133,11 +133,11 @@ class Graph:
 
 
 class Environment:
-	def __init__(self,n=0,file=0):
+	def __init__(self,n=0,file=0,g=Graph()):
+		self.g=g
 		self.n=n
 		aux=[]
 		self.file=file
-		g=Graph()
 		if not file:
 			for x in range(n):
 				aux.append(Node(str(x+1)))  #popolamento lista ausiliaria
