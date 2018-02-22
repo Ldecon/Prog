@@ -138,7 +138,8 @@ class Environment:
 				g.addedge(g.nodes[r],ndaux)
 				aux.pop(c)
 					
-			for x in range(randint(0,(len(g.nodes)*len(g.nodes)-1)/2)):			#aggiunta un numero di archi casuale tra 0 e n(n-1)/2
+			r=randint(0,int((len(g.nodes)*len(g.nodes)-1)/2))	
+			for x in range(r):	
 				c=randint(0,len(g.nodes)-1)
 				r=randint(0,len(g.nodes)-1)
 				if c != r:
