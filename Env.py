@@ -142,40 +142,40 @@ class Environment:
 			for x in range(n):
 				aux.append(Node(str(x+1)))  #popolamento lista ausiliaria
 			c=randint(0,n-1)
-			g.addnode(aux[c])
+			self.g.addnode(aux[c])
 			aux.pop(c)
 			while aux:							#popolamento lista nodi grafo e svuotamento lista ausiliaria
-				r=randint(0,len(g.nodes)-1)
+				r=randint(0,len(self.g.nodes)-1)
 				c=randint(0, len(aux)-1)
-				g.addnode(aux[c])
-				ndaux=g.getnode(aux[c])
-				g.addedge(g.nodes[r],ndaux)
+				self.g.addnode(aux[c])
+				ndaux=self.g.getnode(aux[c])
+				self.g.addedge(self.g.nodes[r],ndaux)
 				w=randint(1,10)						#pesi possibili degli archi
-				g.setweightedge(g.nodes[r],ndaux,w)      #all'arco attuale viene dato il peso w
+				self.g.setweightedge(self.g.nodes[r],ndaux,w)      #all'arco attuale viene dato il peso w
 				aux.pop(c)
 			
-			r=randint(0,int((len(g.nodes)*len(g.nodes)-1)/2))	
+			r=randint(0,int((len(self.g.nodes)*len(self.g.nodes)-1)/2))	
 			for x in range(r):						#aggiunta un numero di archi casuale tra 0 e n(n-1)/2
-				c=randint(0,len(g.nodes)-1)
-				r=randint(0,len(g.nodes)-1)
+				c=randint(0,len(self.g.nodes)-1)
+				r=randint(0,len(self.g.nodes)-1)
 				if c != r:
-					g.addedge(g.nodes[c],g.nodes[r])
-					for y in range(len(g.edges)):
-						if ((g.edges[y].n1.pos == g.nodes[c].pos) and (g.edges[y].n2.pos == g.nodes[r].pos))or((g.edges[y].n1.pos == g.nodes[c].pos) and (g.edges[y].n2.pos == g.nodes[r].pos)):
-							t=g.trianglepath(g.edges[y].n1, g.edges[y].n2)
+					self.g.addedge(self.g.nodes[c],self.g.nodes[r])
+					for y in range(len(self.g.edges)):
+						if ((self.g.edges[y].n1.pos == self.g.nodes[c].pos) and (self.g.edges[y].n2.pos == self.g.nodes[r].pos))or((self.g.edges[y].n1.pos == self.g.nodes[c].pos) and (self.g.edges[y].n2.pos == self.g.nodes[r].pos)):
+							t=self.g.trianglepath(self.g.edges[y].n1, self.g.edges[y].n2)
 							if t:							#risolve la disuguaglianza triangolare
 								for z in range(len(t)):
-									e1=g.getedge(g.edges[y].n1,t[z])
-									e2=g.getedge(t[z],g.edges[y].n2)
+									e1=self.g.getedge(self.g.edges[y].n1,t[z])
+									e2=self.g.getedge(t[z],self.g.edges[y].n2)
 									s=e1.w+e2.w
-									#print(g.edges[y].n1.pos,'-',g.edges[y].n2.pos,'#############################',e1.n1.pos,'-',e1.n2.pos,'(',e1.w,')','->',e2.n1.pos,'-',e2.n2.pos,'(',e2.w,')',s)
+									#print(self.g.edges[y].n1.pos,'-',self.g.edges[y].n2.pos,'#############################',e1.n1.pos,'-',e1.n2.pos,'(',e1.w,')','->',e2.n1.pos,'-',e2.n2.pos,'(',e2.w,')',s)
 									
-									if (g.edges[y].w==0) or (g.edges[y].w>s):
+									if (self.g.edges[y].w==0) or (self.g.edges[y].w>s):
 										ranw=randint(1,s)
-										g.edges[y].w=ranw
+										self.g.edges[y].w=ranw
 							else:
 								ranw=randint(1,10)
-								g.edges[y].w=ranw		
+								self.g.edges[y].w=ranw		
 			
 		else:
 			self.file=open('Graph.txt')
@@ -187,7 +187,7 @@ class Environment:
 					s=s+r[i]
 					i=i+1
 				n=Node(s)
-				g.addnode(n)
+				self.g.addnode(n)
 				r=self.file.readline()
 					
 			while r!='':					#da file inserimento archi
@@ -203,16 +203,16 @@ class Environment:
 					i=i+1
 				n1=Node(s)
 				n2=Node(s1)
-				for x in range(len(g.nodes)):
-					if n1.pos == g.nodes[x].pos:
-						n1=g.getnode(g.nodes[x])
+				for x in range(len(self.g.nodes)):
+					if n1.pos == self.g.nodes[x].pos:
+						n1=self.g.getnode(self.g.nodes[x])
 						break
-				for x in range(len(g.nodes)):	
-					if n2.pos == g.nodes[x].pos:
-						n2=g.getnode(g.nodes[x])
+				for x in range(len(self.g.nodes)):	
+					if n2.pos == self.g.nodes[x].pos:
+						n2=self.g.getnode(self.g.nodes[x])
 						break
-				g.addedge(n1,n2)
-				e=g.getedge(n1,n2)
+				self.g.addedge(n1,n2)
+				e=self.g.getedge(n1,n2)
 				while r[i]!='=':
 					i=i+1
 				i=i+1
@@ -224,10 +224,9 @@ class Environment:
 				r=self.file.readline()
 			
 			
-		g.printg()
-		g.printgfile()
-		g.printedges()
+		#self.g.printg()
+		#self.g.printgfile()
+		#self.g.printedges()
 		
-e=Environment(10)				#creazione grafo da numero di nodi
+#e=Environment(10)				#creazione grafo da numero di nodi
 #e=Environment(file=1)			#lettura grafo da file
-
