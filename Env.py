@@ -108,7 +108,7 @@ class Graph:
 			print()
 			
 	def printgfile(self):
-		f=open("Graph1.txt","w")
+		f=open("Graph.txt","w")
 		for a in self.matnodes:
 			x=self.getnode(a)
 			f.write(x.pos)
@@ -189,8 +189,7 @@ class Environment:
 				n=Node(s)
 				g.addnode(n)
 				r=self.file.readline()
-			print(r)
-			
+					
 			while r!='':					#da file inserimento archi
 				i=1	
 				s=''
@@ -213,11 +212,20 @@ class Environment:
 						n2=g.getnode(g.nodes[x])
 						break
 				g.addedge(n1,n2)
+				e=g.getedge(n1,n2)
+				while r[i]!='=':
+					i=i+1
+				i=i+1
+				sw=''
+				while r[i]!=']':
+					sw=sw+r[i]
+					i=i+1
+				e.w=int(sw)
 				r=self.file.readline()
 			
 			
 		g.printg()
-		#g.printgfile()
+		g.printgfile()
 		g.printedges()
 		
 e=Environment(10)				#creazione grafo da numero di nodi
