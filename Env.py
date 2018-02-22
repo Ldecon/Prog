@@ -1,7 +1,6 @@
 from random import random, randint
 
 
-
 class Node:
 	def __init__(self,pos,cover=0):
 		self.pos=pos
@@ -28,15 +27,38 @@ class Node:
         	return self.pos.__hash__()
 
 
+class Edge:
+	def __init__(self,n1,n2,w=0):
+		self.n1=n1
+		self.n2=n2
+		self.w=w
+	
+	def setweight(self,w):
+		self.w=w
+	
+
 class Graph:
 	def __init__(self,numnodes=0):
 		self.numnodes=numnodes
 		self.nodes=[]
+		self.edges=[]
 		self.matnodes={}
-
+		
 	def getnode(self,n):
 		return self.nodes[self.matnodes[n]]
+		
+	def getweightedge(self,n1,n2):
+		for x in len(edges):
+			if (self.edges[x].n1.pos == n1.pos) and (self.edges[x].n2.pos == n2.pos):
+				return self.edges[x].w
+		return 0
 
+	def existedge(self,n1,n2):
+		for x in range(len(self.edges)):
+			if ((self.edges[x].n1.pos == n1.pos) and (self.edges[x].n2.pos == n2.pos))or((self.edges[x].n1.pos == n2.pos) and (self.edges[x].n2.pos == n1.pos)):
+				return 1
+		return 0
+					
 	def addnode(self,n):
 		if n not in self.matnodes:
 			self.nodes.append(n)
@@ -49,9 +71,17 @@ class Graph:
 		m1=self.getnode(m)
 		n1.addadj(self.getnode(m))
 		m1.addadj(self.getnode(n))
+		if not self.existedge(n,m):
+			e=Edge(n,m)
+			self.edges.append(e)		
 
 	def listnode(self):
 		return self.nodes[:]
+		
+	def printedges(self):
+		for x in range(len(self.edges)):
+			print('[',self.edges[x].n1.pos,',',self.edges[x].n2.pos,', w=',self.edges[x].w,']')
+			
 		
 	def printg(self):
 		for a in self.matnodes:
@@ -77,6 +107,8 @@ class Graph:
 			f.write('\n')
 		f.close()	
 
+
+
 class Environment:
 	def __init__(self,n):
 		aux=[]
@@ -94,8 +126,7 @@ class Environment:
 			g.addedge(g.nodes[r],ndaux)
 			aux.pop(c)
 					
-		for x in range(randint(0,(len(g.nodes)*len(g.nodes)-1)/2)):			#aggiunta archi
-			print(x)
+		for x in range(randint(0,(len(g.nodes)*len(g.nodes)-1)/2)):			#aggiunta un numero di archi casuale tra 0 e n(n-1)/2
 			c=randint(0,len(g.nodes)-1)
 			r=randint(0,len(g.nodes)-1)
 			if c != r:
@@ -103,7 +134,7 @@ class Environment:
 		
 		
 		g.printg()
-		g.printgfile()
+		g.printedges()
 		
 
 e=Environment(7)
