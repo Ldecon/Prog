@@ -33,9 +33,6 @@ class Edge:
 		self.n2=n2
 		self.w=w
 	
-	def setweight(self,w):
-		self.w=w
-	
 
 class Graph:
 	def __init__(self,numnodes=0):
@@ -48,9 +45,9 @@ class Graph:
 		return self.nodes[self.matnodes[n]]
 		
 	def getweightedge(self,n1,n2):
-		for x in len(edges):
-			if (self.edges[x].n1.pos == n1.pos) and (self.edges[x].n2.pos == n2.pos):
-				return self.edges[x].w
+		for x in range(len(self.edges)):
+				if ((self.edges[x].n1.pos == n1.pos) and (self.edges[x].n2.pos == n2.pos))or((self.edges[x].n1.pos == n2.pos) and (self.edges[x].n2.pos == n1.pos)):
+					return self.edges[x].w
 		return 0
 
 	def existedge(self,n1,n2):
@@ -58,7 +55,13 @@ class Graph:
 			if ((self.edges[x].n1.pos == n1.pos) and (self.edges[x].n2.pos == n2.pos))or((self.edges[x].n1.pos == n2.pos) and (self.edges[x].n2.pos == n1.pos)):
 				return 1
 		return 0
-					
+		
+	def getedge(self,n1,n2):
+		for x in range(len(self.edges)):
+				if ((self.edges[x].n1.pos == n1.pos) and (self.edges[x].n2.pos == n2.pos))or((self.edges[x].n1.pos == n2.pos) and (self.edges[x].n2.pos == n1.pos)):
+					return self.edges[x]
+		return None		
+							
 	def addnode(self,n):
 		if n not in self.matnodes:
 			self.nodes.append(n)
@@ -74,10 +77,21 @@ class Graph:
 		if not self.existedge(n,m):
 			e=Edge(n,m)
 			self.edges.append(e)		
-
-	def listnode(self):
-		return self.nodes[:]
-		
+	
+	def setweightedge(self,n1,n2,w):
+		for x in range(len(self.edges)):
+			if ((self.edges[x].n1.pos == n1.pos) and (self.edges[x].n2.pos == n2.pos))or((self.edges[x].n1.pos == n2.pos) and (self.edges[x].n2.pos == n1.pos)):
+				self.edges[x].w=w
+			
+	def trianglepath(self,n1,n2):					#scopre se c'è un percorso triangolare
+		t=[]
+		for x in range(len(n1.adj)):
+			for y in range(len(n2.adj)):
+				if (n1.adj[x].pos==n2.adj[y].pos)and(n1.adj[x] not in t):
+					t.append(n1.adj[x])
+		return t
+			
+	
 	def printedges(self):
 		for x in range(len(self.edges)):
 			print('[',self.edges[x].n1.pos,',',self.edges[x].n2.pos,', w=',self.edges[x].w,']')
@@ -94,7 +108,7 @@ class Graph:
 			print()
 			
 	def printgfile(self):
-		f=open("Graph.txt","w")
+		f=open("Graph1.txt","w")
 		for a in self.matnodes:
 			x=self.getnode(a)
 			f.write(x.pos)
@@ -130,20 +144,38 @@ class Environment:
 			c=randint(0,n-1)
 			g.addnode(aux[c])
 			aux.pop(c)
-			while aux:							#popolamento lista nodi grafo e lista ausiliaria svuotata
+			while aux:							#popolamento lista nodi grafo e svuotamento lista ausiliaria
 				r=randint(0,len(g.nodes)-1)
 				c=randint(0, len(aux)-1)
 				g.addnode(aux[c])
 				ndaux=g.getnode(aux[c])
 				g.addedge(g.nodes[r],ndaux)
+				w=randint(1,10)						#pesi possibili degli archi
+				g.setweightedge(g.nodes[r],ndaux,w)      #all'arco attuale viene dato il peso w
 				aux.pop(c)
-					
+			
 			r=randint(0,int((len(g.nodes)*len(g.nodes)-1)/2))	
-			for x in range(r):	
+			for x in range(r):						#aggiunta un numero di archi casuale tra 0 e n(n-1)/2
 				c=randint(0,len(g.nodes)-1)
 				r=randint(0,len(g.nodes)-1)
 				if c != r:
 					g.addedge(g.nodes[c],g.nodes[r])
+					for y in range(len(g.edges)):
+						if ((g.edges[y].n1.pos == g.nodes[c].pos) and (g.edges[y].n2.pos == g.nodes[r].pos))or((g.edges[y].n1.pos == g.nodes[c].pos) and (g.edges[y].n2.pos == g.nodes[r].pos)):
+							t=g.trianglepath(g.edges[y].n1, g.edges[y].n2)
+							if t:							#risolve la disuguaglianza triangolare
+								for z in range(len(t)):
+									e1=g.getedge(g.edges[y].n1,t[z])
+									e2=g.getedge(t[z],g.edges[y].n2)
+									s=e1.w+e2.w
+									#print(g.edges[y].n1.pos,'-',g.edges[y].n2.pos,'#############################',e1.n1.pos,'-',e1.n2.pos,'(',e1.w,')','->',e2.n1.pos,'-',e2.n2.pos,'(',e2.w,')',s)
+									
+									if (g.edges[y].w==0) or (g.edges[y].w>s):
+										ranw=randint(1,s)
+										g.edges[y].w=ranw
+							else:
+								ranw=randint(1,10)
+								g.edges[y].w=ranw		
 			
 		else:
 			self.file=open('Graph.txt')
@@ -185,8 +217,9 @@ class Environment:
 			
 			
 		g.printg()
+		#g.printgfile()
 		g.printedges()
 		
-e=Environment(7)					#creazione grafo da numero di nodi
+e=Environment(10)				#creazione grafo da numero di nodi
 #e=Environment(file=1)			#lettura grafo da file
 
