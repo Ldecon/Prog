@@ -105,37 +105,87 @@ class Graph:
 				if n.cover:
 					f.write('()')
 			f.write('\n')
+		for x in range(len(self.edges)):
+			f.write('[')
+			f.write(str(self.edges[x].n1.pos))
+			f.write(',')
+			f.write(str(self.edges[x].n2.pos))
+			f.write(', w=')
+			f.write(str(self.edges[x].w))
+			f.write(']\n')
+			
 		f.close()	
 
 
 
 class Environment:
-	def __init__(self,n):
+	def __init__(self,n=0,file=0):
+		self.n=n
 		aux=[]
+		self.file=file
 		g=Graph()
-		for x in range(n):
-			aux.append(Node(str(x+1)))  #popolamento lista ausiliaria
-		c=randint(0,n-1)
-		g.addnode(aux[c])
-		aux.pop(c)
-		while aux:							#popolamento lista nodi grafo e lista ausiliaria svuotata
-			r=randint(0,len(g.nodes)-1)
-			c=randint(0, len(aux)-1)
+		if not file:
+			for x in range(n):
+				aux.append(Node(str(x+1)))  #popolamento lista ausiliaria
+			c=randint(0,n-1)
 			g.addnode(aux[c])
-			ndaux=g.getnode(aux[c])
-			g.addedge(g.nodes[r],ndaux)
 			aux.pop(c)
+			while aux:							#popolamento lista nodi grafo e lista ausiliaria svuotata
+				r=randint(0,len(g.nodes)-1)
+				c=randint(0, len(aux)-1)
+				g.addnode(aux[c])
+				ndaux=g.getnode(aux[c])
+				g.addedge(g.nodes[r],ndaux)
+				aux.pop(c)
 					
-		for x in range(randint(0,(len(g.nodes)*len(g.nodes)-1)/2)):			#aggiunta un numero di archi casuale tra 0 e n(n-1)/2
-			c=randint(0,len(g.nodes)-1)
-			r=randint(0,len(g.nodes)-1)
-			if c != r:
-				g.addedge(g.nodes[c],g.nodes[r])
-		
-		
+			for x in range(randint(0,(len(g.nodes)*len(g.nodes)-1)/2)):			#aggiunta un numero di archi casuale tra 0 e n(n-1)/2
+				c=randint(0,len(g.nodes)-1)
+				r=randint(0,len(g.nodes)-1)
+				if c != r:
+					g.addedge(g.nodes[c],g.nodes[r])
+			
+		else:
+			self.file=open('Graph.txt')
+			r=self.file.readline()
+			while r[0]!='[':					#da file inserimento nodi
+				i=0
+				s=''
+				while r[i]!=':':
+					s=s+r[i]
+					i=i+1
+				n=Node(s)
+				g.addnode(n)
+				r=self.file.readline()
+			print(r)
+			
+			while r!='':					#da file inserimento archi
+				i=1	
+				s=''
+				while r[i]!=',':
+					s=s+r[i]
+					i=i+1
+				s1=''
+				i=i+1
+				while r[i]!=',':
+					s1=s1+r[i]
+					i=i+1
+				n1=Node(s)
+				n2=Node(s1)
+				for x in range(len(g.nodes)):
+					if n1.pos == g.nodes[x].pos:
+						n1=g.getnode(g.nodes[x])
+						break
+				for x in range(len(g.nodes)):	
+					if n2.pos == g.nodes[x].pos:
+						n2=g.getnode(g.nodes[x])
+						break
+				g.addedge(n1,n2)
+				r=self.file.readline()
+			
+			
 		g.printg()
 		g.printedges()
 		
-
-e=Environment(7)
+e=Environment(7)					#creazione grafo da numero di nodi
+#e=Environment(file=1)			#lettura grafo da file
 
