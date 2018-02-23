@@ -190,7 +190,8 @@ class Environment:
 							lists.sort()
 							#print(e.n1.pos,'-',e.n2.pos,'#############################',e1.n1.pos,'-',e1.n2.pos,'(',e1.w,')','->',e2.n1.pos,'-',e2.n2.pos,'(',e2.w,')',s)	
 						if (lists[0] >= listab[0])and(listab[len(listab)-1]<=lists[0]):
-
+							if listab[len(listab)-1]==0:
+								listab[len(listab)-1]=1
 							ranw=randint(listab[len(listab)-1],lists[0])
 							e.w=ranw
 						else:
