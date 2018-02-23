@@ -11,6 +11,10 @@ class Node:
 		if n not in self.adj:
 			self.adj.append(n)
 	
+	def remadj(self,n):
+		if n in self.adj:
+			self.adj.remove(n)
+	
 	def setcover(self,c):
 		self.cover=c
 	
@@ -76,7 +80,16 @@ class Graph:
 		m1.addadj(self.getnode(n))
 		if not self.existedge(n,m):
 			e=Edge(n,m)
-			self.edges.append(e)		
+			self.edges.append(e)	
+			
+	def remedge(self,e):
+		n1=self.getnode(e.n1)
+		n2=self.getnode(e.n2)
+		n1.remadj(self.getnode(e.n2))
+		n2.remadj(self.getnode(e.n1))
+		if self.existedge(n1,n2):
+			self.edges.remove(self.getedge(self.getnode(n1),self.getnode(n2)))
+				
 	
 	def setweightedge(self,n1,n2,w):
 		for x in range(len(self.edges)):
@@ -154,28 +167,41 @@ class Environment:
 				self.g.setweightedge(self.g.nodes[r],ndaux,w)      #all'arco attuale viene dato il peso w
 				aux.pop(c)
 			
-			r=randint(0,int((len(self.g.nodes)*len(self.g.nodes)-1)/2))	
+			r=randint(0,int((len(self.g.nodes)*len(self.g.nodes)-1)/2))
+			re=[]	
 			for x in range(r):						#aggiunta un numero di archi casuale tra 0 e n(n-1)/2
 				c=randint(0,len(self.g.nodes)-1)
 				r=randint(0,len(self.g.nodes)-1)
-				if c != r:
+				if (c != r) and(not self.g.existedge(self.g.nodes[c],self.g.nodes[r])):
 					self.g.addedge(self.g.nodes[c],self.g.nodes[r])
-					for y in range(len(self.g.edges)):
-						if ((self.g.edges[y].n1.pos == self.g.nodes[c].pos) and (self.g.edges[y].n2.pos == self.g.nodes[r].pos))or((self.g.edges[y].n1.pos == self.g.nodes[c].pos) and (self.g.edges[y].n2.pos == self.g.nodes[r].pos)):
-							t=self.g.trianglepath(self.g.edges[y].n1, self.g.edges[y].n2)
-							if t:							#risolve la disuguaglianza triangolare
-								for z in range(len(t)):
-									e1=self.g.getedge(self.g.edges[y].n1,t[z])
-									e2=self.g.getedge(t[z],self.g.edges[y].n2)
-									s=e1.w+e2.w
-									#print(self.g.edges[y].n1.pos,'-',self.g.edges[y].n2.pos,'#############################',e1.n1.pos,'-',e1.n2.pos,'(',e1.w,')','->',e2.n1.pos,'-',e2.n2.pos,'(',e2.w,')',s)
-									
-									if (self.g.edges[y].w==0) or (self.g.edges[y].w>s):
-										ranw=randint(1,s)
-										self.g.edges[y].w=ranw
-							else:
-								ranw=randint(1,10)
-								self.g.edges[y].w=ranw		
+					e=self.g.edges[len(self.g.edges)-1]
+					t=self.g.trianglepath(e.n1,e.n2)
+					if t:
+						listab=[]
+						lists=[]
+						for y in range(len(t)):
+							e1=self.g.getedge(e.n1,t[y])
+							e2=self.g.getedge(t[y],e.n2)
+							s=e1.w+e2.w
+							ab=abs(e1.w-e2.w)
+							listab.append(ab)
+							listab.sort()
+							lists.append(s)
+							lists.sort()
+							#print(e.n1.pos,'-',e.n2.pos,'#############################',e1.n1.pos,'-',e1.n2.pos,'(',e1.w,')','->',e2.n1.pos,'-',e2.n2.pos,'(',e2.w,')',s)	
+						if (lists[0] >= listab[0])and(listab[len(listab)-1]<=lists[0]):
+
+							ranw=randint(listab[len(listab)-1],lists[0])
+							e.w=ranw
+						else:
+							re.append(e)	
+					else:
+						ranw=randint(1,10)
+						e.w=ranw
+						
+			for x in range(len(re)):
+				self.g.remedge(self.g.getedge(re[x].n1,re[x].n2))
+							
 			
 		else:
 			self.file=open('Graph.txt')
@@ -224,9 +250,9 @@ class Environment:
 				r=self.file.readline()
 			
 			
-		#self.g.printg()
+		self.g.printg()
 		#self.g.printgfile()
-		#self.g.printedges()
+		self.g.printedges()
 		
-#e=Environment(10)				#creazione grafo da numero di nodi
+e=Environment(10)				#creazione grafo da numero di nodi
 #e=Environment(file=1)			#lettura grafo da file
