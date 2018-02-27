@@ -168,7 +168,7 @@ class Robot:
 				
 	def stats(self,ns,g):
 		for x in range(len(g.nodes)):
-			print('Node:',g.nodes[x].pos,'visit:',(g.nodes[x].cont/ns)*100,'%')
+			print('Node:',g.nodes[x].pos,'visits:',(g.nodes[x].cont/ns)*100,'%')
 	
 
 env=Environment(file=1)
