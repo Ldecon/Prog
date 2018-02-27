@@ -31,7 +31,7 @@ class Robot:
 		p=self.possiblepos[randint(0,len(self.possiblepos)-1)]
 		self.newactualpos(p)
 		
-	def randomsteps(self,ns):
+	def randomsteps(self,ns):    #numstep
 		for x in range(ns):
 			print('step ',x+1)
 			print('robot in:',self.actualpos.pos)
@@ -110,8 +110,6 @@ class Robot:
 		return ln
 	
 	def dijkstra(self,n1,n2,g):
-		print(n1.pos)
-		print(n2.pos)
 		s=[]
 		t=self.listnodesdij(g.nodes)
 		for x in range(len(t)):
@@ -121,17 +119,56 @@ class Robot:
 				break
 		d=self.pathdij(s,t,g)
 		
-		for x in range(len(d)):							#
-			print(d[x].n.pos,'->',d[x].f,end=' ')	 	#
-		print()    										#
+		#for x in range(len(d)):							#
+		#	print(d[x].n.pos,'->',d[x].f,end=' ')	 	#
+		#print()    										#
 		s=[]
 		s=self.minpathnodetonode(n2,d,s)
 		s.reverse()
 		return s
-		
+
 	
 	############ scelta tra importanza #######
 	
+	def nodeidleness(self,n,t):			#node, time
+		return t-n.lastvisit
+		
+	def updatevaluesn(self,n,t):
+		n.cont=n.cont+1
+		n.lastvisit=t
+	
+	
+	def nextstep(self,n,t,g):			#node, time, graph
+		v=0
+		for x in range(len(g.nodes)):
+			g.nodes[x].valueimp=g.nodes[x].imp * abs(self.nodeidleness(g.nodes[x],t)) 
+			if g.nodes[x].valueimp > v :
+				next=g.nodes[x]
+				v=g.nodes[x].valueimp
+		return next		
+				
+				
+	def imppath(self,ns,g):      #numstep,graph
+		self.updatevaluesn(self.actualpos,1)
+		x=0
+		print('Step', x+1)
+		print('Robot in:', self.actualpos.pos)
+		while x<=ns:
+			next=self.nextstep(r.actualpos,x+1,g)
+			d=self.dijkstra(r.actualpos,next,g)
+			d.pop(0)
+			for y in range(len(d)):				
+				x=x+1
+				if x >= ns:
+					break
+				r.actualpos=d[y].n
+				print('Step', x+1)
+				print('Robot in:', self.actualpos.pos)
+				self.updatevaluesn(self.actualpos,x+1)
+				
+	def stats(self,ns,g):
+		for x in range(len(g.nodes)):
+			print('Node:',g.nodes[x].pos,'visit:',(g.nodes[x].cont/ns)*100,'%')
 	
 
 env=Environment(file=1)
@@ -139,4 +176,6 @@ n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 r=Robot(n)
 #r.randomsteps(1)
-d=r.dijkstra(n,n1,env.g)
+#d=r.dijkstra(n,n1,env.g)
+r.imppath(500,env.g)
+r.stats(500,env.g)
