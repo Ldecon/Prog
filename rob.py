@@ -17,6 +17,7 @@ class Robot:
 	
 	def newactualpos(self,p):
 		self.actualpos=p
+		self.actualpos.cont=self.actualpos.cont+1
 		self.possiblepos=self.actualpos.adj
 
 
@@ -32,10 +33,11 @@ class Robot:
 		self.newactualpos(p)
 		
 	def randomsteps(self,ns):    #numstep
+		self.actualpos.cont=self.actualpos.cont+1
 		for x in range(ns):
-			print('step ',x+1)
-			print('robot in:',self.actualpos.pos)
-			self.printpossiblepos()
+			#print('step ',x+1)
+			#print('robot in:',self.actualpos.pos)
+			#self.printpossiblepos()
 			self.randomnextstep()
 			
 	########## 
@@ -151,8 +153,8 @@ class Robot:
 	def imppath(self,ns,g):      #numstep,graph
 		self.updatevaluesn(self.actualpos,1)
 		x=0
-		print('Step', x+1)
-		print('Robot in:', self.actualpos.pos)
+		#print('Step', x+1)
+		#print('Robot in:', self.actualpos.pos)
 		while x<=ns:
 			next=self.nextstep(r.actualpos,x+1,g)
 			d=self.dijkstra(r.actualpos,next,g)
@@ -162,8 +164,8 @@ class Robot:
 				if x >= ns:
 					break
 				r.actualpos=d[y].n
-				print('Step', x+1)
-				print('Robot in:', self.actualpos.pos)
+				#print('Step', x+1)
+				#print('Robot in:', self.actualpos.pos)
 				self.updatevaluesn(self.actualpos,x+1)
 				
 	def stats(self,ns,g):
@@ -200,8 +202,8 @@ class Robot:
 	def impnormpath(self,ns,g):
 		self.updatevaluesn(self.actualpos,1)
 		x=0
-		print('Step', x+1)
-		print('Robot in:', self.actualpos.pos)
+		#print('Step', x+1)
+		#print('Robot in:', self.actualpos.pos)
 		while x<=ns:
 			next=self.nextstepnorm(r.actualpos,x+1,g)
 			d=self.dijkstra(r.actualpos,next,g)
@@ -211,8 +213,8 @@ class Robot:
 				if x >= ns:
 					break
 				r.actualpos=d[y].n
-				print('Step', x+1)
-				print('Robot in:', self.actualpos.pos)
+				#print('Step', x+1)
+				#print('Robot in:', self.actualpos.pos)
 				self.updatevaluesn(self.actualpos,x+1)
 		
 		
@@ -222,8 +224,16 @@ env=Environment(file=1)
 n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 r=Robot(n)
-#r.randomsteps(1)
+
+r.randomsteps(1000)
+
+r.stats(1000,env.g)
+print()
 #d=r.dijkstra(n,n1,env.g)
-#r.imppath(500,env.g)
+
+r.imppath(500,env.g)
+r.stats(1000,env.g)
+print()
 r.impnormpath(1000,env.g)
 r.stats(1000,env.g)
+print()
