@@ -2,10 +2,11 @@ from random import random, randint
 
 
 class Node:
-	def __init__(self,pos,cover=0):
+	def __init__(self,pos,imp=0,cover=0):
 		self.pos=pos
 		self.cover=cover
 		self.adj=[]
+		self.imp=imp
 
 	def addadj(self,n):
 		if n not in self.adj:
@@ -113,7 +114,7 @@ class Graph:
 	def printg(self):
 		for a in self.matnodes:
 			x=self.getnode(a)
-			print(x.pos, ":", end="")
+			print(x.pos, 'i=', x.imp, ":", end="")
 			for n in x.adj:
 				print(" ", n.pos,  end="")
 				if n.cover:
@@ -125,6 +126,8 @@ class Graph:
 		for a in self.matnodes:
 			x=self.getnode(a)
 			f.write(x.pos)
+			f.write(' i=')
+			f.write(str(x.imp))
 			f.write(':')
 			for n in x.adj:
 				f.write(' ')
@@ -153,7 +156,7 @@ class Environment:
 		self.file=file
 		if not file:
 			for x in range(n):
-				aux.append(Node(str(x+1)))  #popolamento lista ausiliaria
+				aux.append(Node(str(x+1),imp=randint(1,20)))  #popolamento lista ausiliaria
 			c=randint(0,n-1)
 			self.g.addnode(aux[c])
 			aux.pop(c)
@@ -210,11 +213,19 @@ class Environment:
 			while r[0]!='[':					#da file inserimento nodi
 				i=0
 				s=''
-				while r[i]!=':':
+				while r[i]!=' ':
 					s=s+r[i]
 					i=i+1
 				n=Node(s)
 				self.g.addnode(n)
+				s=''
+				while r[i]!='=':
+					i=i+1
+				i=i+1
+				while r[i]!=':':
+					s=s+r[i]
+					i=i+1
+				n.imp=int(s)
 				r=self.file.readline()
 					
 			while r!='':					#da file inserimento archi
@@ -251,9 +262,9 @@ class Environment:
 				r=self.file.readline()
 			
 			
-		self.g.printg()
+		#self.g.printg()
 		#self.g.printgfile()
-		self.g.printedges()
+		#self.g.printedges()
 		
-e=Environment(10)				#creazione grafo da numero di nodi
+#e=Environment(10)				#creazione grafo da numero di nodi
 #e=Environment(file=1)			#lettura grafo da file
