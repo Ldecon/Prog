@@ -168,7 +168,54 @@ class Robot:
 				
 	def stats(self,ns,g):
 		for x in range(len(g.nodes)):
-			print('Node:',g.nodes[x].pos,'visits:',(g.nodes[x].cont/ns)*100,'%')
+			print('Node:',g.nodes[x].pos,'visits:',g.nodes[x].cont, 'times',(g.nodes[x].cont/ns)*100,'%')
+		
+		
+		##################### imp norm
+		
+	def maxidleness(self,t,g):
+		maxidl=0
+		for x in range(len(g.nodes)):
+			if abs(t-g.nodes[x].lastvisit) > maxidl:
+				maxidl=t-g.nodes[x].lastvisit
+		return maxidl
+	
+	def maximp(self,g):
+		maximp=0
+		for x in range(len(g.nodes)):
+			if g.nodes[x].imp > maximp:
+				maximp=g.nodes[x].imp
+		return maximp
+	
+	def nextstepnorm(self,n,t,g):
+		maxidl=self.maxidleness(t,g)
+		maximp=self.maximp(g)
+		v=0
+		for x in range(len(g.nodes)):
+			if ((g.nodes[x].imp/maximp)*(self.nodeidleness(g.nodes[x],t)/maxidl)) > v:
+				next=g.nodes[x]
+				v=(g.nodes[x].imp/maximp)*(self.nodeidleness(g.nodes[x],t)/maxidl)
+		return next
+			
+	def impnormpath(self,ns,g):
+		self.updatevaluesn(self.actualpos,1)
+		x=0
+		print('Step', x+1)
+		print('Robot in:', self.actualpos.pos)
+		while x<=ns:
+			next=self.nextstepnorm(r.actualpos,x+1,g)
+			d=self.dijkstra(r.actualpos,next,g)
+			d.pop(0)
+			for y in range(len(d)):				
+				x=x+1
+				if x >= ns:
+					break
+				r.actualpos=d[y].n
+				print('Step', x+1)
+				print('Robot in:', self.actualpos.pos)
+				self.updatevaluesn(self.actualpos,x+1)
+		
+		
 	
 
 env=Environment(file=1)
@@ -177,5 +224,6 @@ n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 r=Robot(n)
 #r.randomsteps(1)
 #d=r.dijkstra(n,n1,env.g)
-r.imppath(500,env.g)
-r.stats(500,env.g)
+#r.imppath(500,env.g)
+r.impnormpath(1000,env.g)
+r.stats(1000,env.g)
