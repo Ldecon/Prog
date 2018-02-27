@@ -7,6 +7,9 @@ class Node:
 		self.cover=cover
 		self.adj=[]
 		self.imp=imp
+		self.cont=0
+		self.lastvisit=0
+		self.valueimp=0
 
 	def addadj(self,n):
 		if n not in self.adj:
