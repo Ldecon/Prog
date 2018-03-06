@@ -2,7 +2,7 @@ from random import random, randint
 
 
 class Node:
-	def __init__(self,pos,imp=0,cover=0):
+	def __init__(self,pos,imp=-1,cover=0):
 		self.pos=pos
 		self.cover=cover
 		self.adj=[]
@@ -93,6 +93,9 @@ class Graph:
 		n2.remadj(self.getnode(e.n1))
 		if self.existedge(n1,n2):
 			self.edges.remove(self.getedge(self.getnode(n1),self.getnode(n2)))
+	
+	def setimpn(self,n,i):
+		n.imp=i
 				
 	
 	def setweightedge(self,n1,n2,w):
@@ -107,7 +110,51 @@ class Graph:
 				if (n1.adj[x].pos==n2.adj[y].pos)and(n1.adj[x] not in t):
 					t.append(n1.adj[x])
 		return t
-			
+	
+	
+	def critnodes(self,ln,num):			#scelta nodi critici
+		lc=[]
+		if len(ln[0].adj) < (len(ln)-2):
+				lc.append(ln[0])
+		for x in range(len(ln)):
+			if ln[x] not in lc:
+				flag=0
+				for y in range(len(lc)):
+					if ln[x] in lc[y].adj:
+						flag=1
+				if not flag:
+					lc.append(ln[x])
+		d=len(lc)-num
+		if d == -num:						#se ogni nodo è collegato con ognuno
+			lc.append(ln[randint(0,len(ln)-1)])
+		else:
+			while d > 0:				#se la lista dei possibili nodi critici ha più di num elementi, elimina casualmente la differenza di nodi, se ne ha meno tiene quelli che ha
+				lc.pop(randint(0,len(lc)-1))
+				d=d-1
+		return lc
+		
+	
+		
+	def cascadeimp(self,n,i,imax):			#nodo, importarza corrente, importanza massima	
+		imp=i-(imax/(len(self.nodes))*i)
+		if (n.imp != -1) and (n.imp > imp):
+			return
+		else:
+			self.setimpn(n,imp)
+			for x in range(len(n.adj)):
+				self.cascadeimp(n.adj[x],imp,imax)
+		
+		
+	
+						
+	def setimpg(self):		#setta importanza nodi grafo
+		k=int(len(self.nodes)*0.2)				#percentuale di nodi critici
+		lc=self.critnodes(self.nodes,k)
+		for x in range(len(lc)):
+			self.setimpn(lc[x],4)			#setta importanza nodi critici a 4
+			for y in range(len(lc[x].adj)):
+				self.cascadeimp(lc[x].adj[y],lc[x].imp,4)  
+		
 	
 	def printedges(self):
 		for x in range(len(self.edges)):
@@ -159,7 +206,7 @@ class Environment:
 		self.file=file
 		if not file:
 			for x in range(n):
-				aux.append(Node(str(x+1),imp=randint(1,20)))  #popolamento lista ausiliaria
+				aux.append(Node(str(x+1)))  #popolamento lista ausiliaria
 			c=randint(0,n-1)
 			self.g.addnode(aux[c])
 			aux.pop(c)
@@ -195,7 +242,7 @@ class Environment:
 							lists.append(s)
 							lists.sort()
 							#print(e.n1.pos,'-',e.n2.pos,'#############################',e1.n1.pos,'-',e1.n2.pos,'(',e1.w,')','->',e2.n1.pos,'-',e2.n2.pos,'(',e2.w,')',s)	
-						if (lists[0] >= listab[0])and(listab[len(listab)-1]<=lists[0]):
+						if (lists[0] >= listab[0])and(listab[len(listab)-1]<=lists[0]):			#se min(somma) >= min(differenza) & max(differenza) <= min(somma)
 							if listab[len(listab)-1]==0:
 								listab[len(listab)-1]=1
 							ranw=randint(listab[len(listab)-1],lists[0])
@@ -208,8 +255,11 @@ class Environment:
 						
 				for y in range(len(re)):
 					self.g.remedge(self.g.getedge(re[y].n1,re[y].n2))
-				re=[]
-							
+				re=[]		
+			
+			self.g.setimpg()
+			
+			
 			
 		else:
 			self.file=open('Graph.txt')
@@ -229,7 +279,7 @@ class Environment:
 				while r[i]!=':':
 					s=s+r[i]
 					i=i+1
-				n.imp=int(s)
+				n.imp=float(s)
 				r=self.file.readline()
 					
 			while r!='':					#da file inserimento archi
