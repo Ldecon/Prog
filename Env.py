@@ -206,8 +206,9 @@ class Environment:
 						ranw=randint(1,10)
 						e.w=ranw
 						
-			for x in range(len(re)):
-				self.g.remedge(self.g.getedge(re[x].n1,re[x].n2))
+				for y in range(len(re)):
+					self.g.remedge(self.g.getedge(re[y].n1,re[y].n2))
+				re=[]
 							
 			
 		else:
