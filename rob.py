@@ -53,13 +53,13 @@ class Robot:
 		for x in range(len(ln)):
 			if n.pos== ln[x].n.pos :
 				return ln[x]
-		return None
+		return 
 	
 	def findnodelistdij(self,n,ln):
 		for x in range(len(ln)):
 			if n.n.pos== ln[x].n.pos :
 				return ln[x]
-		return None
+		return 
 	
 	def minf(self,ln):
 		i=-1
@@ -133,7 +133,7 @@ class Robot:
 	############ scelta tra importanza #######
 	
 	def nodeidleness(self,n,t):			#node, time
-		return t-n.lastvisit
+		return abs(t-n.lastvisit)
 		
 	def updatevaluesn(self,n,t):
 		n.cont=n.cont+1
@@ -198,11 +198,11 @@ class Robot:
 		maxidl=0.0
 		for x in range(len(g.nodes)):
 			if abs(t-g.nodes[x].lastvisit) > maxidl:
-				maxidl=t-g.nodes[x].lastvisit
+				maxidl=abs(t-g.nodes[x].lastvisit)
 		return maxidl
 	
 	def maximp(self,g):
-		maximp=0
+		maximp=0.0
 		for x in range(len(g.nodes)):
 			if g.nodes[x].imp > maximp:
 				maximp=g.nodes[x].imp
@@ -211,6 +211,7 @@ class Robot:
 	def nextstepnorm(self,n,t,g):
 		maxidl=self.maxidleness(t,g)
 		maximp=self.maximp(g)
+		next=None
 		v=0
 		for x in range(len(g.nodes)):
 			if ((g.nodes[x].imp/maximp)*(self.nodeidleness(g.nodes[x],t)/maxidl)) > v:
@@ -240,7 +241,7 @@ class Robot:
 	
 
 #env=Environment(file=1)
-env=Environment(10)
+env=Environment(20)
 n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 r=Robot(n)
