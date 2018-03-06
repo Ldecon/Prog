@@ -167,16 +167,35 @@ class Robot:
 				#print('Step', x+1)
 				#print('Robot in:', self.actualpos.pos)
 				self.updatevaluesn(self.actualpos,x+1)
+	
+	def maxcont(self,t):
+		n=0
+		for x in range(len(t)):
+			if t[x].cont >= n:
+				n=t[x].cont
+				a=t[x]
+		return a
 				
 	def stats(self,ns,g):
-		for x in range(len(g.nodes)):
-			print('Node:',g.nodes[x].pos,'visits:',g.nodes[x].cont, 'times',(g.nodes[x].cont/ns)*100,'%')
+		temp=g.nodes.copy()
+		aus=[]
+		while temp:
+			aus.append(self.maxcont(temp))
+			for x in range(len(temp)):
+				if  temp[x].pos == aus[len(aus)-1].pos:
+					temp.pop(x)
+					break
+						
+		for x in range(len(aus)):
+			if aus[x].imp==4:
+				print('crnode: ',end='')
+			print('Node:',aus[x].pos,'visits:',aus[x].cont, 'times',(aus[x].cont/ns)*100,'%')
 		
 		
 		##################### imp norm
 		
 	def maxidleness(self,t,g):
-		maxidl=0
+		maxidl=0.0
 		for x in range(len(g.nodes)):
 			if abs(t-g.nodes[x].lastvisit) > maxidl:
 				maxidl=t-g.nodes[x].lastvisit
@@ -220,13 +239,13 @@ class Robot:
 		
 	
 
-env=Environment(file=1)
+#env=Environment(file=1)
+env=Environment(10)
 n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 r=Robot(n)
-
+env.g.printg()
 r.randomsteps(1000)
-
 r.stats(1000,env.g)
 print()
 #d=r.dijkstra(n,n1,env.g)
