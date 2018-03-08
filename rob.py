@@ -246,14 +246,16 @@ n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 r=Robot(n)
 env.g.printg()
+print('random')
 r.randomsteps(1000)
 r.stats(1000,env.g)
 print()
 #d=r.dijkstra(n,n1,env.g)
-
+print('imp*idleness')
 r.imppath(500,env.g)
 r.stats(1000,env.g)
 print()
+print('(imp/impmax)*(idleness/idlenessmax)')
 r.impnormpath(1000,env.g)
 r.stats(1000,env.g)
 print()
