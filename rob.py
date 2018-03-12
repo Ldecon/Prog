@@ -195,7 +195,7 @@ class Robot:
 		for x in range(len(aus)):
 			if aus[x].imp==4:
 				print('crnode -> ',end='')
-			print('Node:',aus[x].pos,'visits:',aus[x].cont, 'times',(aus[x].cont/ns)*100,'%')
+			print('Node:',aus[x].pos,'imp=',aus[x].imp,'visits:',aus[x].cont, 'times',(aus[x].cont/ns)*100,'%')
 		
 		
 		##################### imp norm
@@ -253,16 +253,17 @@ n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 r=Robot(n)
 env.g.printg()
+env.g.printedges()
 print('Mode: random')
 r.randomsteps(500,env.g)
 r.stats(500,env.g)
 print()
 #d=r.dijkstra(n,n1,env.g)
 print('Mode: imp*idleness')
-r.imppath(500,env.g)
-r.stats(500,env.g)
+r.imppath(1000,env.g)
+r.stats(1000,env.g)
 print()
-print('(Mode: imp/impmax)*(idleness/idlenessmax)')
-r.impnormpath(500,env.g)
-r.stats(500,env.g)
+print('Mode: (imp/impmax)*(idleness/idlenessmax)')
+r.impnormpath(1000,env.g)
+r.stats(1000,env.g)
 print()
