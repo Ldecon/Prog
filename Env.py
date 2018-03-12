@@ -135,16 +135,25 @@ class Graph:
 		
 	
 		
-	def cascadeimp(self,n,i,imax):			#nodo, importarza corrente, importanza massima	
-		imp=i-(imax/(len(self.nodes))*i)
-		if (n.imp != -1) and (n.imp > imp):
+	#def cascadeimp(self,n,i,imax):			#nodo, importanza corrente, importanza massima	
+	#	imp=i-(imax/(len(self.nodes))*i)
+	#	if (n.imp != -1) and (n.imp > imp):
+	#		return
+	#	else:
+	#		self.setimpn(n,imp)
+	#		for x in range(len(n.adj)):
+	#			self.cascadeimp(n.adj[x],imp,imax)
+		
+		
+		#importanza set dimezzamento
+	def cascadeimp(self,n,i):			#nodo, importanza corrente  
+		imp=i/2
+		if (n.imp != -1)and(n.imp > imp):
 			return
 		else:
 			self.setimpn(n,imp)
 			for x in range(len(n.adj)):
-				self.cascadeimp(n.adj[x],imp,imax)
-		
-		
+				self.cascadeimp(n.adj[x],imp)
 	
 						
 	def setimpg(self):		#setta importanza nodi grafo
@@ -153,7 +162,7 @@ class Graph:
 		for x in range(len(lc)):
 			self.setimpn(lc[x],4)			#setta importanza nodi critici a 4
 			for y in range(len(lc[x].adj)):
-				self.cascadeimp(lc[x].adj[y],lc[x].imp,4)  
+				self.cascadeimp(lc[x].adj[y],lc[x].imp)        #altro csacade aggiungere ,4
 		
 	
 	def printedges(self):
