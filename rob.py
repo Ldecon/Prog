@@ -1,5 +1,6 @@
 from env import Node, Edge, Graph, Environment
 from random import randint
+import matplotlib.pyplot as plt
 import math
 
 class Ndij:
@@ -181,21 +182,51 @@ class Robot:
 				n=t[x].cont
 				a=t[x]
 		return a
+	
+	def listnamepos(self,ln):
+		auspos=[]
+		for x in range(len(ln)):
+			if ln[x].imp==4:
+				auspos.append('CR '+ln[x].pos)
+			else:
+				auspos.append(ln[x].pos)
+		return auspos
 				
 	def stats(self,ns,g):
-		temp=g.nodes.copy()
-		aus=[]
-		while temp:
-			aus.append(self.maxcont(temp))
-			for x in range(len(temp)):
-				if  temp[x].pos == aus[len(aus)-1].pos:
-					temp.pop(x)
-					break
-						
+		#temp=g.nodes.copy()
+		aus=g.nodes.copy()
+		#while temp:
+		#	aus.append(self.maxcont(temp))
+		#	for x in range(len(temp)):
+		#		if  temp[x].pos == aus[len(aus)-1].pos:
+		#			temp.pop(x)
+		#			break
+		ls=range(len(aus))
+		auspos=[]
+		auscont=[]	
 		for x in range(len(aus)):
+			auscont.append(aus[x].cont)
 			if aus[x].imp==4:
+				auspos.append('CR '+aus[x].pos)
 				print('crnode -> ',end='')
+			else:
+				auspos.append(aus[x].pos)
 			print('Node:',aus[x].pos,'imp=',aus[x].imp,'visits:',aus[x].cont, 'times',(aus[x].cont/ns)*100,'%')
+		return auscont
+	
+	def plotbar(self,d,x,y):
+		ls=range(len(x))
+		plt.figure('Stats', figsize=(20, 6))
+		plt.title('Nodes visits\' stats')
+		for z in range(len(y)):
+			plt.subplot(1,len(y),z+1)
+			plt.bar(ls,y[z], color='g')	
+			plt.title(d[z])
+			plt.xticks(ls,x,rotation='vertical')
+			for i in range(len(ls)):
+				if x[i][0]=='C':
+					plt.bar(i,y[z][i],color='r',align='center')
+		plt.show()	
 		
 		
 		##################### imp norm
@@ -254,16 +285,20 @@ n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 r=Robot(n)
 env.g.printg()
 env.g.printedges()
+y=[]
+d=['Random','imp*idleness','(imp/impmax)*(idleness/idlenessmax)']
 print('Mode: random')
 r.randomsteps(500,env.g)
-r.stats(500,env.g)
+y.append(r.stats(500,env.g))
 print()
 #d=r.dijkstra(n,n1,env.g)
 print('Mode: imp*idleness')
 r.imppath(1000,env.g)
-r.stats(1000,env.g)
+y.append(r.stats(1000,env.g))
 print()
 print('Mode: (imp/impmax)*(idleness/idlenessmax)')
 r.impnormpath(1000,env.g)
-r.stats(1000,env.g)
+y.append(r.stats(1000,env.g))
 print()
+r.plotbar(d,r.listnamepos(env.g.nodes),y)
+
