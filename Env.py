@@ -7,7 +7,8 @@ class Node:
 		self.cover=cover
 		self.adj=[]
 		self.imp=imp
-		self.cont=0
+		self.visitcount=0
+		self.passcount=0
 		self.lastvisit=0
 		self.valueimp=0
 
