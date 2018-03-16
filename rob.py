@@ -155,9 +155,8 @@ class Robot:
 				self.updatevaluesn(self.actualpos)
 				if d[y].n.pos == next.pos:
 					x=x+1
-					if x >= ns:
-						break
-					self.updatevcount(self.actualpos,x+1)
+					if x <= ns:
+						self.updatevcount(self.actualpos,x+1)
 	
 	############ scelta tra importanza ######################################################################
 	
@@ -198,9 +197,8 @@ class Robot:
 				self.updatevaluesn(self.actualpos)
 				if d[y].n.pos == next.pos:
 					x=x+1
-					if x >= ns:
-						break
-					self.updatevcount(self.actualpos,x+1)
+					if x <= ns:
+						self.updatevcount(self.actualpos,x+1)
 					
 					
 	def listnamepos(self,ln):
@@ -284,7 +282,7 @@ class Robot:
 			next=self.nextstepnorm(r.actualpos,x+1,g)
 			d=self.dijkstra(r.actualpos,next,g)
 			d.pop(0)
-			for y in range(len(d)):				
+			for y in range(len(d)):			
 				x=x+1
 				if x >= ns:
 					break
@@ -294,9 +292,9 @@ class Robot:
 				self.updatevaluesn(self.actualpos)
 				if d[y].n.pos == next.pos:
 					x=x+1
-					if x >= ns:
-						break
-					self.updatevcount(self.actualpos,x+1)
+					if x <= ns:
+						self.updatevcount(self.actualpos,x+1)
+				
 		
 	
 
@@ -308,7 +306,7 @@ r=Robot(n)
 env.g.printg()
 env.g.printedges()
 y=[]
-d=['Random Pass','imp*idleness Pass','(imp/impmax)*(idleness/idlenessmax) Pass','Random Visits','imp*idleness Visits','(imp/impmax)*(idleness/idlenessmax) Visits' ]
+d=['# Random Pass',' # imp*idleness Pass','# (imp/impmax)*(idleness/idlenessmax) Pass','# Random Visits','# imp*idleness Visits','# (imp/impmax)*(idleness/idlenessmax) Visits' ]
 print('Mode: random')
 r.randomsteps(500,env.g)
 y1,y2=r.stats(500,env.g)
