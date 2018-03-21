@@ -105,7 +105,7 @@ class Robot:
 			ln.append(aux)
 		return ln
 	
-	def dijkstra(self,n1,n2,g):
+	def dijkstra(self,n1,n2,g):							#(startnode,finishnode,graph)
 		s=[]
 		t=self.listnodesdij(g.nodes)
 		for x in range(len(t)):
@@ -122,8 +122,30 @@ class Robot:
 		s=self.minpathnodetonode(n2,d,s)
 		s.reverse()
 		return s
-	
-	
+		
+		
+	################## johnson #########################################################################
+		
+		
+	def johnson(self,g):
+		matjo=[[None for x in range(len(g.nodes))]for x in range(len(g.nodes))]
+		for x in range(len(g.nodes)):
+			for y in range(len(g.nodes)):
+				d=self.dijkstra(g.nodes[x],g.nodes[y],g)
+				d.pop(0)
+				matjo[int(g.nodes[x].pos)-1][int(g.nodes[y].pos)-1]=d
+		return matjo
+		
+	def printmatjo(self,m):
+		for x in range(len(m[0])):
+			print(x+1,': ',end="")
+			for y in range(len(m[0])):
+				print('[',end='')
+				for z in range(len(m[x][y])):
+					print(m[x][y][z].n.pos, end=' ')
+				print(']',end=' ')
+			print()
+				
 	
 	############# scelta random  ########################################################################
 	
@@ -135,18 +157,15 @@ class Robot:
 		n.visitcount=n.visitcount+1
 		n.lastvisit=t
 	
-	def randomsteps(self,ns,g):    #numstep
+					
+	def randomsteps(self,ns,g,m):			#numsteps,graph,matjo
 		self.resetcounts(g)
 		self.updatevaluesn(self.actualpos)
 		self.updatevcount(self.actualpos,1)
 		x=0
 		while x <= ns:
-			#print('step ',x+1)
-			#print('robot in:',self.actualpos.pos)
-			#self.printpossiblepos()
 			next=g.nodes[randint(0,len(g.nodes)-1)]
-			d=self.dijkstra(self.actualpos,next,g)
-			d.pop(0)
+			d=m[int(self.actualpos.pos)-1][int(next.pos)-1]
 			for y in range(len(d)):
 				x=x+1
 				if x >= ns:
@@ -157,7 +176,8 @@ class Robot:
 					x=x+1
 					if x <= ns:
 						self.updatevcount(self.actualpos,x+1)
-	
+					
+						
 	############ scelta tra importanza ######################################################################
 	
 	def nodeidleness(self,n,t):			#node, time
@@ -176,22 +196,19 @@ class Robot:
 		return next		
 				
 				
-	def imppath(self,ns,g):      #numstep,graph
+	def imppath(self,ns,g,m):				#numsteps,graph,matjo
 		self.resetcounts(g)
 		self.updatevaluesn(self.actualpos)
 		self.updatevcount(self.actualpos,1)
 		x=0
-		#print('Step', x+1)
-		#print('Robot in:', self.actualpos.pos)
 		while x<=ns:
 			next=self.nextstep(r.actualpos,x+1,g)
-			d=self.dijkstra(r.actualpos,next,g)
-			d.pop(0)
+			d=m[int(self.actualpos.pos)-1][int(next.pos)-1]
 			for y in range(len(d)):				
 				x=x+1
 				if x >= ns:
 					break
-				r.actualpos=d[y].n
+				self.actualpos=d[y].n
 				#print('Step', x+1)
 				#print('Robot in:', self.actualpos.pos)
 				self.updatevaluesn(self.actualpos)
@@ -199,7 +216,7 @@ class Robot:
 					x=x+1
 					if x <= ns:
 						self.updatevcount(self.actualpos,x+1)
-					
+
 					
 	def listnamepos(self,ln):
 		auspos=[]
@@ -271,17 +288,14 @@ class Robot:
 				v=(g.nodes[x].imp/maximp)*(self.nodeidleness(g.nodes[x],t)/maxidl)
 		return next
 			
-	def impnormpath(self,ns,g):
+	def impnormpath(self,ns,g,m):					#numsteps,graph,matjo
 		self.resetcounts(g)
 		self.updatevaluesn(self.actualpos)
 		self.updatevcount(self.actualpos,1)
-		x=0
-		#print('Step', x+1)
-		#print('Robot in:', self.actualpos.pos)
+		x=0		
 		while x<=ns:
 			next=self.nextstepnorm(r.actualpos,x+1,g)
-			d=self.dijkstra(r.actualpos,next,g)
-			d.pop(0)
+			d=m[int(self.actualpos.pos)-1][int(next.pos)-1]
 			for y in range(len(d)):			
 				x=x+1
 				if x >= ns:
@@ -294,9 +308,7 @@ class Robot:
 					x=x+1
 					if x <= ns:
 						self.updatevcount(self.actualpos,x+1)
-				
-		
-	
+			
 
 #env=Environment(file=1)
 env=Environment(20)
@@ -305,19 +317,20 @@ n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 r=Robot(n)
 env.g.printg()
 env.g.printedges()
+m=r.johnson(env.g)
+#r.printmatjo(m)
 y=[]
 d=['# Random Pass',' # imp*idleness Pass','# (imp/impmax)*(idleness/idlenessmax) Pass','# Random Visits','# imp*idleness Visits','# (imp/impmax)*(idleness/idlenessmax) Visits' ]
 print('Mode: random')
-r.randomsteps(500,env.g)
-y1,y2=r.stats(500,env.g)
+r.randomsteps(1000,env.g,m)
+y1,y2=r.stats(1000,env.g)
 print()
-#d=r.dijkstra(n,n1,env.g)
 print('Mode: imp*idleness')
-r.imppath(1000,env.g)
+r.imppath(1000,env.g,m)
 y3,y4=r.stats(1000,env.g)
 print()
 print('Mode: (imp/impmax)*(idleness/idlenessmax)')
-r.impnormpath(1000,env.g)
+r.impnormpath(1000,env.g,m)
 y5,y6=r.stats(1000,env.g)
 print()
 y.append(y1)
