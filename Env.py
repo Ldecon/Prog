@@ -77,6 +77,11 @@ class Graph:
 			self.matnodes[n]=len(self.nodes)-1
 			self.numnodes=self.numnodes+1
 		return self.getnode(n)
+	
+	def remnode(self,n):
+		self.nodes.remove(n)
+		#self.matnodes.remove(n)
+		self.numnodes=self.numnodes-1
 
 	def addedge(self,n,m):
 		n1= self.getnode(n)
@@ -172,6 +177,9 @@ class Graph:
 			
 		
 	def printg(self):
+		if len(self.nodes)==0:
+			print("empty graph")
+			return
 		for a in self.matnodes:
 			x=self.getnode(a)
 			print(x.pos, 'i=', x.imp, ":", end="")
@@ -206,12 +214,22 @@ class Graph:
 			
 		f.close()	
 
-
+	def destroyg(self):
+		while len(self.edges) :
+			self.remedge(self.edges[0])
+		while len(self.nodes) :
+			del self.matnodes[self.nodes[0]]
+			self.remnode(self.nodes[0])
+		del self
+			
+	def __del__(self):
+		del self
 
 class Environment:
-	def __init__(self,n=0,file=0,g=Graph()):
+	def __init__(self,n=0,file=0,g=Graph(),ed=-1):
 		self.g=g
 		self.n=n
+		self.ed=ed
 		aux=[]
 		self.file=file
 		if not file:
@@ -229,10 +247,12 @@ class Environment:
 				w=randint(1,10)						#pesi possibili degli archi
 				self.g.setweightedge(self.g.nodes[r],ndaux,w)      #all'arco attuale viene dato il peso w
 				aux.pop(c)
-			
-			r=randint(0,int((len(self.g.nodes)*len(self.g.nodes)-1)/2))
+			if(self.ed<0):
+				ra=randint(0,int((len(self.g.nodes)*len(self.g.nodes)-1)/2))
+			else:
+				ra=int(((len(self.g.nodes)*len(self.g.nodes)-1)/2)*self.ed)
 			re=[]	
-			for x in range(r):						#aggiunta un numero di archi casuale tra 0 e n(n-1)/2
+			for x in range(ra):						#aggiunta un numero di archi casuale tra 0 e n(n-1)/2
 				c=randint(0,len(self.g.nodes)-1)
 				r=randint(0,len(self.g.nodes)-1)
 				if (c != r) and(not self.g.existedge(self.g.nodes[c],self.g.nodes[r])):
@@ -324,8 +344,18 @@ class Environment:
 					i=i+1
 				e.w=int(sw)
 				r=self.file.readline()
-			
-			
+		
+		
+	def destroye(self):
+		self.g.destroyg()
+		del self	
+
+				
+	def __del__(self):
+		del self
+	
+
+				
 		#self.g.printg()
 		#self.g.printgfile()
 		#self.g.printedges()
