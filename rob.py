@@ -130,6 +130,7 @@ class Robot:
 	def johnson(self,g):
 		matjo=[[None for x in range(len(g.nodes))]for x in range(len(g.nodes))]
 		for x in range(len(g.nodes)):
+			print(x)
 			for y in range(len(g.nodes)):
 				d=self.dijkstra(g.nodes[x],g.nodes[y],g)
 				d.pop(0)
@@ -308,36 +309,76 @@ class Robot:
 					x=x+1
 					if x <= ns:
 						self.updatevcount(self.actualpos,x+1)
+
+
+
+		####################### earth mover's distance ###############################################
+		
+		
+	def minsumpq(self,ln):
+		sumpass=0
+		sumvis=0
+		for i in range(len(ln)):
+			sumpass=sumpass+ln[i].passcount
+			sumvis=sumvis+ln[i].visitcount
+		if sumpass <= sumvis :
+			return sunmpass
+		else:
+			return sumvis
+	
+	def emd(self,ln):   			#listnode
+		w=0
+		for i in range(len(ln)):
+			for j in range(len(ln)):
+				d=abs(ln[i].passcount-ln[j].visitcount)
+				if ln[i].passcount >= ln[j].visitcount :
+					f=ln[j].visitcount
+				else:
+					f=ln[i].passcount
+				w=w+(d*f)
+		
+		return w/self.minsumpq(ln)
 			
 
 #env=Environment(file=1)
-env=Environment(20)
-n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
-n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]
-r=Robot(n)
-env.g.printg()
-env.g.printedges()
-m=r.johnson(env.g)
-#r.printmatjo(m)
-y=[]
-d=['# Random Pass',' # imp*idleness Pass','# (imp/impmax)*(idleness/idlenessmax) Pass','# Random Visits','# imp*idleness Visits','# (imp/impmax)*(idleness/idlenessmax) Visits' ]
-print('Mode: random')
-r.randomsteps(1000,env.g,m)
-y1,y2=r.stats(1000,env.g)
-print()
-print('Mode: imp*idleness')
-r.imppath(1000,env.g,m)
-y3,y4=r.stats(1000,env.g)
-print()
-print('Mode: (imp/impmax)*(idleness/idlenessmax)')
-r.impnormpath(1000,env.g,m)
-y5,y6=r.stats(1000,env.g)
-print()
-y.append(y1)
-y.append(y3)
-y.append(y5)
-y.append(y2)
-y.append(y4)
-y.append(y6)
-r.plotbarpass(d,r.listnamepos(env.g.nodes),y)
+listemd=[]
+for x in range(10):
+	sumemd=0
+	for y in range(10):
+		env=Environment(50,ed=x*0.1)
+		n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
+		n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]	
+		r=Robot(n)
+		env.g.printg()	
+		env.g.printedges()
+		m=r.johnson(env.g)
+		#r.printmatjo(m)
+		y=[]
+		#d=['# Random Pass',' # imp*idleness Pass','# (imp/impmax)*(idleness/idlenessmax) Pass','# Random Visits','# imp*idleness Visits','# (imp/impmax)*(idleness/idlenessmax) Visits' ]
+		print('Mode: random')
+		r.randomsteps(10000,env.g,m)
+		y1,y2=r.stats(10000,env.g)
+		print()
+		print('Mode: imp*idleness')
+		r.imppath(10000,env.g,m)
+		y3,y4=r.stats(10000,env.g)
+		print()
+		print('Mode: (imp/impmax)*(idleness/idlenessmax)')
+		r.impnormpath(10000,env.g,m)
+		y5,y6=r.stats(10000,env.g)
+		print()
+		sumemd=sumemd+r.emd(env.g.nodes)
+		#y.append(y1)
+		#y.append(y3)
+		#y.append(y5)
+		#y.append(y2)
+		#y.append(y4)
+		#y.append(y6)
+		#r.plotbarpass(d,r.listnamepos(env.g.nodes),y)
+		env.destroye()
+	listemd.append(sumemd/10)
+print(listemd)
+
+plt.plot([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1],listemd)
+plt.show()
 
