@@ -190,10 +190,13 @@ class Robot:
 	def nextstep(self,n,t,g):			#node, time, graph
 		v=0
 		for x in range(len(g.nodes)):
-			g.nodes[x].valueimp=g.nodes[x].imp * abs(self.nodeidleness(g.nodes[x],t)) 
+			if x > len(g.nodes):
+				break
+			g.nodes[x].valueimp=g.nodes[x].imp * self.nodeidleness(g.nodes[x],t)
 			if g.nodes[x].valueimp > v :
 				next=g.nodes[x]
 				v=g.nodes[x].valueimp
+			
 		return next		
 				
 				
@@ -202,7 +205,7 @@ class Robot:
 		self.updatevaluesn(self.actualpos)
 		self.updatevcount(self.actualpos,1)
 		x=0
-		while x<=ns:
+		while x<ns:
 			next=self.nextstep(r.actualpos,x+1,g)
 			d=m[int(self.actualpos.pos)-1][int(next.pos)-1]
 			for y in range(len(d)):				
@@ -274,8 +277,11 @@ class Robot:
 	def maximp(self,g):
 		maximp=0.0
 		for x in range(len(g.nodes)):
-			if g.nodes[x].imp > maximp:
+			if x > len(g.nodes):
+				break
+			if g.nodes[x].imp >= maximp:
 				maximp=g.nodes[x].imp
+
 		return maximp
 	
 	def nextstepnorm(self,n,t,g):
@@ -284,6 +290,8 @@ class Robot:
 		next=None
 		v=0
 		for x in range(len(g.nodes)):
+			if x > len(g.nodes):
+				break
 			if ((g.nodes[x].imp/maximp)*(self.nodeidleness(g.nodes[x],t)/maxidl)) > v:
 				next=g.nodes[x]
 				v=(g.nodes[x].imp/maximp)*(self.nodeidleness(g.nodes[x],t)/maxidl)
@@ -294,7 +302,7 @@ class Robot:
 		self.updatevaluesn(self.actualpos)
 		self.updatevcount(self.actualpos,1)
 		x=0		
-		while x<=ns:
+		while x<ns:
 			next=self.nextstepnorm(r.actualpos,x+1,g)
 			d=m[int(self.actualpos.pos)-1][int(next.pos)-1]
 			for y in range(len(d)):			
@@ -338,14 +346,25 @@ class Robot:
 				w=w+(d*f)
 		
 		return w/self.minsumpq(ln)
-			
+		
+		
+		######################## simple histograms comparison ###############################
+	
+	def comp(self,ln):
+		w=0
+		for i in range(len(ln)):
+			d=abs(ln[i].passcount-ln[i].visitcount)
+			w=w+d
+		return w
 
 #env=Environment(file=1)
 listemd=[]
-for x in range(10):
+listcomp=[]
+for x in range(5):
 	sumemd=0
+	sumcomp=0
 	for y in range(10):
-		env=Environment(50,ed=x*0.1)
+		env=Environment(20,ed=x*0.2)
 		n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 		n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]	
 		r=Robot(n)
@@ -368,6 +387,7 @@ for x in range(10):
 		y5,y6=r.stats(10000,env.g)
 		print()
 		sumemd=sumemd+r.emd(env.g.nodes)
+		sumcomp=sumcomp+r.comp(env.g.nodes)
 		#y.append(y1)
 		#y.append(y3)
 		#y.append(y5)
@@ -377,8 +397,19 @@ for x in range(10):
 		#r.plotbarpass(d,r.listnamepos(env.g.nodes),y)
 		env.destroye()
 	listemd.append(sumemd/10)
+	listcomp.append(sumcomp/10)
 print(listemd)
-
-plt.plot([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1],listemd)
+print()
+print(listcomp)
+plt.figure(1, figsize=(10,4))
+plt.subplot(121)
+plt.plot([0.2,0.4,0.6,0.8,1],listemd)
+plt.xlabel('% edges')
+plt.ylabel('emd values')
+plt.title('emd')
+plt.subplot(122)
+plt.plot([0.2,0.4,0.6,0.8,1],listcomp)
+plt.xlabel('% edges')
+plt.ylabel('comp values')
+plt.title('histagram comparison')
 plt.show()
-
