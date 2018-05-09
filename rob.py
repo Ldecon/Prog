@@ -189,6 +189,7 @@ class Robot:
 	
 	def nextstep(self,n,t,g):			#node, time, graph
 		v=0
+		
 		for x in range(len(g.nodes)):
 			if x > len(g.nodes):
 				break
@@ -196,7 +197,7 @@ class Robot:
 			if g.nodes[x].valueimp > v :
 				next=g.nodes[x]
 				v=g.nodes[x].valueimp
-			
+		
 		return next		
 				
 				
@@ -205,6 +206,7 @@ class Robot:
 		self.updatevaluesn(self.actualpos)
 		self.updatevcount(self.actualpos,1)
 		x=0
+		
 		while x<ns:
 			next=self.nextstep(r.actualpos,x+1,g)
 			d=m[int(self.actualpos.pos)-1][int(next.pos)-1]
@@ -230,6 +232,19 @@ class Robot:
 			else:
 				auspos.append(ln[x].pos)
 		return auspos
+		
+	def sumvisits(self,ln):
+		sv=0
+		for i in range(len(ln)):
+			sv=sv+ln[i].visitcount
+		return sv
+	
+	def sumpass(self,ln):
+		sp=0
+		for i in range(len(ln)):
+			sp=sp+ln[i].passcount
+		return sp
+	
 				
 	def stats(self,ns,g):
 		aus=g.nodes.copy()
@@ -240,13 +255,13 @@ class Robot:
 			auspcount.append(aus[x].passcount)
 			if aus[x].imp==4:
 				print('crnode -> ',end='')
-			print('Node:',aus[x].pos,'imp=',aus[x].imp,'visits:',aus[x].passcount, 'times',(aus[x].passcount/ns)*100,'%')
+			print('Node:',aus[x].pos,'imp=',aus[x].imp,'visits:',aus[x].passcount, 'times',(aus[x].passcount/self.sumpass(g.nodes))*100,'%')
 		print('Visits')
 		for x in range(len(aus)):
 			ausvcount.append(aus[x].visitcount)
 			if aus[x].imp==4:
 				print('crnode -> ',end='')
-			print('Node:',aus[x].pos,'imp=',aus[x].imp,'visits:',aus[x].visitcount, 'times',(aus[x].visitcount/ns)*100,'%')
+			print('Node:',aus[x].pos,'imp=',aus[x].imp,'visits:',aus[x].visitcount, 'times',(aus[x].visitcount/self.sumvisits(g.nodes))*100,'%')
 		return auspcount,ausvcount
 	
 	
@@ -330,7 +345,7 @@ class Robot:
 			sumpass=sumpass+ln[i].passcount
 			sumvis=sumvis+ln[i].visitcount
 		if sumpass <= sumvis :
-			return sunmpass
+			return sumpass
 		else:
 			return sumvis
 	
@@ -360,11 +375,11 @@ class Robot:
 #env=Environment(file=1)
 listemd=[]
 listcomp=[]
-for x in range(5):
+for x in range(10):
 	sumemd=0
 	sumcomp=0
 	for y in range(10):
-		env=Environment(20,ed=x*0.2)
+		env=Environment(20,ed=x*0.1)
 		n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 		n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]	
 		r=Robot(n)
@@ -396,6 +411,8 @@ for x in range(5):
 		#y.append(y6)
 		#r.plotbarpass(d,r.listnamepos(env.g.nodes),y)
 		env.destroye()
+		del env.g
+		del env
 	listemd.append(sumemd/10)
 	listcomp.append(sumcomp/10)
 print(listemd)
@@ -403,12 +420,12 @@ print()
 print(listcomp)
 plt.figure(1, figsize=(10,4))
 plt.subplot(121)
-plt.plot([0.2,0.4,0.6,0.8,1],listemd)
+plt.plot([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1],listemd)
 plt.xlabel('% edges')
 plt.ylabel('emd values')
 plt.title('emd')
 plt.subplot(122)
-plt.plot([0.2,0.4,0.6,0.8,1],listcomp)
+plt.plot([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1],listcomp)
 plt.xlabel('% edges')
 plt.ylabel('comp values')
 plt.title('histagram comparison')
