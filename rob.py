@@ -379,7 +379,7 @@ for x in range(10):
 	sumemd=0
 	sumcomp=0
 	for y in range(10):
-		env=Environment(20,ed=x*0.1)
+		env=Environment(50,ed=x*0.1)
 		n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 		n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]	
 		r=Robot(n)
