@@ -12,6 +12,7 @@ class Node:
 		self.passcount=0
 		self.lastvisit=0
 		self.valueimp=0
+		self.nidlavg=0
 
 	def addadj(self,n):
 		if n not in self.adj:
@@ -318,5 +319,3 @@ class Environment:
 		del self
 			
 			
-
-
