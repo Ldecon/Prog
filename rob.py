@@ -324,7 +324,7 @@ class Robot:
 				x=x+1
 				if x >= ns:
 					break
-				r.actualpos=d[y].n
+				self.actualpos=d[y].n
 				#print('Step', x+1)
 				#print('Robot in:', self.actualpos.pos)
 				self.updatevaluesn(self.actualpos)
@@ -332,7 +332,114 @@ class Robot:
 					x=x+1
 					if x <= ns:
 						self.updatevcount(self.actualpos,x+1)
+						
+	
+	
+		######################### algorithm ################################
+	
+	def avgidl(self,n,t):					#media idleness nodo
+		idl=0
+		if n.visitcount != 0:
+			idl=(((n.visitcount-1)*n.nidlavg)+(t-n.lastvisit))/n.visitcount
+		return idl
+		
+	def setavgidln(self,n,t):
+		n.nidlavg=self.avgidl(n,t)
+	
+	def avgidlg(self,g,t):					#media idleness grafo
+		avg=0
+		for x in range(len(g.nodes)):
+			avg=avg+self.avgidl(g.nodes[x],t)
+		avg=avg/len(g.nodes)
+		return avg	
+	
+	def dist(self,n1,n2,g):					#distanza
+		ew=g.getedge(n1,n2).w
+		av=self.avgwg(g)
+		if ew > av :
+			return ew
+		else:
+			return av
+			
+		
+	def avgwg(self,g):								#media pesi degli archi
+		avg=0
+		for x in range(len(g.edges)):
+			avg=avg+g.edges[x].w
+		avg=avg/len(g.edges)
+		return avg
+	
+	def dt(self,n1,n2,g,v):					#deltat = dist(n1,n2)/velocità robot
+		return self.dist(n1,n2,g) / v
+		
+	def tnext(self,t,n1,n2,g,v):					#expected time = t+dt
+		return t + self.dt(n1,n2,g,v)
+		
+	def idlexp(self,t,n1,n2,g,v):					#expected idleness = tnext/tlastvis
+		return self.tnext(t,n1,n2,g,v)-n1.lastvisit
+	
+	def nextstepidl(self,t,n,g):
+		i=0
+		aus=None
+		for x in range(len(n.adj)):
+		#	i=self.idlexp(t,n,n.adj[x],g,v) / self.dt(n,n.adj[x],g,v)
+		#	if u < i:
+		#		u=i
+		#		aus=n.adj[x]
+		#		print("più grande",aus.pos,"con",u)
+			if n.adj[x].visitcount == 0:
+				aus=n.adj[x]
+				break
+			else:
+				if	i < t-n.adj[x].lastvisit:
+					i=t-n.adj[x].lastvisit
+					aus=n.adj[x]
+		return aus
+	
+	def idlalg(self,ns,g):
+		self.updatevcount(self.actualpos,1)
+		self.setavgidln(self.actualpos,1)
+		avgg=self.avgidlg(g,1)
+		print("avgg=",avgg)
+		x=1
+		while x < ns:
+			next=self.nextstepidl(x+1,self.actualpos,g)
+			self.actualpos=next
+			self.setavgidln(self.actualpos,x+1)
+			avgg=self.avgidlg(g,x+1)
+			print("avgg=",avgg)
+			self.updatevcount(self.actualpos,x+1)
+			print(self.actualpos.pos)
+			x=x+1
+			
+	def nextstepidlimp(self,t,n,g):
+		i=0
+		aus=None
+		for x in range(len(n.adj)):
+			if i < n.adj[x].imp+(t-n.adj[x].lastvisit):
+				i=n.adj[x].imp+(t-n.adj[x].lastvisit)
+				aus=n.adj[x]
+		return aus
 
+	def idlimpalg(self,ns,g):
+		self.updatevcount(self.actualpos,1)
+		self.setavgidln(self.actualpos,1)
+		avgg=self.avgidlg(g,1)
+		print("avgg=",avgg)
+		x=1
+		while x < ns:
+			next=self.nextstepidlimp(x+1,self.actualpos,g)
+			self.actualpos=next
+			self.setavgidln(self.actualpos,x+1)
+			avgg=self.avgidlg(g,x+1)
+			print("avgg=",avgg)
+			self.updatevcount(self.actualpos,x+1)
+			print(self.actualpos.pos)
+			x=x+1
+	
+	def visprint(self,g):
+		for x in range(len(g.nodes)):
+			print('Node:',g.nodes[x].pos,'imp:',g.nodes[x].imp,'visits:',g.nodes[x].visitcount, 'idleness avg:',g.nodes[x].nidlavg)
 
 
 		####################### earth mover's distance ###############################################
@@ -371,15 +478,26 @@ class Robot:
 			d=abs(ln[i].passcount-ln[i].visitcount)
 			w=w+d
 		return w
+		
+		
+		
+		
+	
+	
+		
+		
+		
+		
 
 #env=Environment(file=1)
+'''			#emd graphics
 listemd=[]
 listcomp=[]
 for x in range(10):
 	sumemd=0
 	sumcomp=0
 	for y in range(10):
-		env=Environment(50,ed=x*0.1)
+		env=Environment(10,ed=x*0.1)
 		n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 		n1=env.g.nodes[randint(0,len(env.g.nodes)-1)]	
 		r=Robot(n)
@@ -388,7 +506,7 @@ for x in range(10):
 		m=r.johnson(env.g)
 		#r.printmatjo(m)
 		y=[]
-		#d=['# Random Pass',' # imp*idleness Pass','# (imp/impmax)*(idleness/idlenessmax) Pass','# Random Visits','# imp*idleness Visits','# (imp/impmax)*(idleness/idlenessmax) Visits' ]
+		#d=['# Random Pass',' # imp*idleness Pass','# (imp/impmax)*(idleness/idlenessmax) Pass','# Random Visits','# imp*idleness Visits','# (imp/impmax)*(idleness/idlenessmax) Visits' ]		#histogram
 		print('Mode: random')
 		r.randomsteps(10000,env.g,m)
 		y1,y2=r.stats(10000,env.g)
@@ -403,13 +521,13 @@ for x in range(10):
 		print()
 		sumemd=sumemd+r.emd(env.g.nodes)
 		sumcomp=sumcomp+r.comp(env.g.nodes)
-		#y.append(y1)
-		#y.append(y3)
-		#y.append(y5)
-		#y.append(y2)
-		#y.append(y4)
-		#y.append(y6)
-		#r.plotbarpass(d,r.listnamepos(env.g.nodes),y)
+		#y.append(y1)		#histogram
+		#y.append(y3)		#histogram
+		#y.append(y5)		#histogram
+		#y.append(y2)		#histogram
+		#y.append(y4)		#histogram
+		#y.append(y6)		#histogram
+		#r.plotbarpass(d,r.listnamepos(env.g.nodes),y)			#histogram
 		env.destroye()
 		del env.g
 		del env
@@ -428,5 +546,31 @@ plt.subplot(122)
 plt.plot([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1],listcomp)
 plt.xlabel('% edges')
 plt.ylabel('comp values')
-plt.title('histagram comparison')
+plt.title('histograms comparison')
 plt.show()
+'''
+env=Environment(20,ed=0.8)
+n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
+r=Robot(n)
+env.g.printg()	
+env.g.printedges()
+print('Mode: er')
+r.idlimpalg(10000,env.g)
+#y3,y4=r.stats(10000,env.g)
+r.visprint(env.g)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
