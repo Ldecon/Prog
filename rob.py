@@ -9,7 +9,10 @@ class Ndij:
 		self.f=math.inf
 		self.j=None
 
-
+class Observer:
+	def __init__(self,obspos):
+		self.obspos=obspos
+		self.listidln=[]
 
 class Robot:
 	def __init__(self,startpos):
@@ -335,7 +338,7 @@ class Robot:
 						
 	
 	
-		######################### algorithm ################################
+		######################### utility function ################################
 	
 	def avgidl(self,n,t):					#media idleness nodo
 		idl=0
@@ -377,51 +380,19 @@ class Robot:
 		
 	def idlexp(self,t,n1,n2,g,v):					#expected idleness = tnext/tlastvis
 		return self.tnext(t,n1,n2,g,v)-n1.lastvisit
-	
-	def nextstepidl(self,t,n,g):
-		i=0
-		aus=None
-		for x in range(len(n.adj)):
-		#	i=self.idlexp(t,n,n.adj[x],g,v) / self.dt(n,n.adj[x],g,v)
-		#	if u < i:
-		#		u=i
-		#		aus=n.adj[x]
-		#		print("più grande",aus.pos,"con",u)
-			if n.adj[x].visitcount == 0:
-				aus=n.adj[x]
-				break
-			else:
-				if	i < t-n.adj[x].lastvisit:
-					i=t-n.adj[x].lastvisit
-					aus=n.adj[x]
-		return aus
-	
-	def idlalg(self,ns,g):
-		self.updatevcount(self.actualpos,1)
-		self.setavgidln(self.actualpos,1)
-		avgg=self.avgidlg(g,1)
-		print("avgg=",avgg)
-		x=1
-		while x < ns:
-			next=self.nextstepidl(x+1,self.actualpos,g)
-			self.actualpos=next
-			self.setavgidln(self.actualpos,x+1)
-			avgg=self.avgidlg(g,x+1)
-			print("avgg=",avgg)
-			self.updatevcount(self.actualpos,x+1)
-			print(self.actualpos.pos)
-			x=x+1
 			
 	def nextstepidlimp(self,t,n,g):
-		i=0
+		u=0
 		aus=None
 		for x in range(len(n.adj)):
-			if i < n.adj[x].imp+(t-n.adj[x].lastvisit):
-				i=n.adj[x].imp+(t-n.adj[x].lastvisit)
+			i=((t-n.adj[x].lastvisit)*n.adj[x].imp)/g.getedge(n,n.adj[x]).w				#u(v)= (idl(v) * imp(v)) / d(v) 
+			if u < i:
+				u=i
 				aus=n.adj[x]
 		return aus
 
-	def idlimpalg(self,ns,g):
+	def utidlimp(self,ns,g,o):
+		obscountidl=0
 		self.updatevcount(self.actualpos,1)
 		self.setavgidln(self.actualpos,1)
 		avgg=self.avgidlg(g,1)
@@ -430,16 +401,21 @@ class Robot:
 		while x < ns:
 			next=self.nextstepidlimp(x+1,self.actualpos,g)
 			self.actualpos=next
+			obscountidl=obscountidl+1
 			self.setavgidln(self.actualpos,x+1)
 			avgg=self.avgidlg(g,x+1)
 			print("avgg=",avgg)
 			self.updatevcount(self.actualpos,x+1)
-			print(self.actualpos.pos)
+			#print(self.actualpos.pos)
+			if self.actualpos == o.obspos:
+				o.listidln.append(obscountidl)
+				obscountidl=0
 			x=x+1
+			
 	
 	def visprint(self,g):
 		for x in range(len(g.nodes)):
-			print('Node:',g.nodes[x].pos,'imp:',g.nodes[x].imp,'visits:',g.nodes[x].visitcount, 'idleness avg:',g.nodes[x].nidlavg)
+			print('Node:',g.nodes[x].pos,'imp:',g.nodes[x].imp,'visits:',g.nodes[x].visitcount, 'idleness avg:',g.nodes[x].nidlavg,' percentuale:',(g.nodes[x].visitcount/10000)*100,'%')
 
 
 		####################### earth mover's distance ###############################################
@@ -549,17 +525,26 @@ plt.ylabel('comp values')
 plt.title('histograms comparison')
 plt.show()
 '''
-env=Environment(20,ed=0.8)
+env=Environment(50,ed=1)
 n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 r=Robot(n)
+o=Observer(env.g.nodes[randint(0,len(env.g.nodes)-1)])
 env.g.printg()	
 env.g.printedges()
-print('Mode: er')
-r.idlimpalg(10000,env.g)
+print('Mode: ut')
+r.utidlimp(5000,env.g,o)
 #y3,y4=r.stats(10000,env.g)
 r.visprint(env.g)
-
-
+print('osservatore: (nodo:',o.obspos.pos,') ', o.listidln)
+listply=[]
+for x in range(len(o.listidln)):
+	c=0
+	for y in range(o.listidln[x]):
+		listply.append(c)
+		c=c+1
+		
+plt.plot(listply)
+plt.show()
 
 
 
