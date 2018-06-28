@@ -698,15 +698,17 @@ plt.show()
 steps=[50000,100000,150000]
 for s in range(len(steps)):
 	names= 'log/' + str(steps[s]) + 'steps/'
-	k=3
-	while k < 11:#11
-		namek= names + 'k'+ str(k) + '/'
-		for nnod in range(10):#10
-			namen=namek + str((nnod+1)*10) + 'nodi/'
-			for nedg in range(11):#11
-				namee= namen + str(nedg*10) + '% archi/'
-				for x in range(10): #20
-					namet = namee + 'Test' + str(x)
+	for nnod in range(2):#10
+		namen=names + str((nnod+1)*10) + 'nodi/'
+		for nedg in range(3):#11
+			namee= namen + str(nedg*10) + '% archi/'	
+			k=3
+			listk=[]
+			while k < 5:#11
+				namek= namee + 'k'+ str(k) + '/'
+				listkerr=[]				
+				for x in range(5):
+					namet = namek + 'Test' + str(x)
 					env=Environment((nnod+1)*10,g=Graph(), ed=nedg*0.1)
 					n=env.g.nodes[randint(0,len(env.g.nodes)-1)]	
 					r=Robot(n)
@@ -733,13 +735,40 @@ for s in range(len(steps)):
 					plt.savefig(namet)
 					#plt.show()
 					plt.close()
+					se=0
+					aus=[]
+					z=0
+					while z < len(o.errlist):
+						aus.append(o.errlist[z])
+						if len(o.errlist) >10:
+							z=z+int(len(o.errlist)/10)
+						else:
+							z=z+len(o.errlist)-1
+					for y in range(len(aus)):
+						se=se+aus[y]
+					listkerr.append(se/len(aus))
 					env.destroye()
 					del env.g
 					del env
 					del r
 					del o
-		
-		k=k+1
+				se=0
+				for y in range(len(listkerr)):
+					se=se+listkerr[y]
+				listk.append(se/len(listkerr))
+				k=k+1
+			lisx=[]
+			for x in range(len(listk)):
+				lisx.append(x+3)
+				
+			plt.plot(lisx,listk)
+			plt.xlabel('k')
+			plt.ylabel('MSE')
+			namg=namee + 'Grafico errore medio k' + str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi'
+			plt.title('Grafico errore medio k')
+			plt.savefig(namg)
+			plt.close()
+			
 	
 
 
