@@ -698,16 +698,16 @@ plt.show()
 steps=[50000,100000,150000]
 for s in range(len(steps)):
 	names= 'log/' + str(steps[s]) + 'steps/'
-	for nnod in range(2):#10
+	for nnod in range(10):#10
 		namen=names + str((nnod+1)*10) + 'nodi/'
-		for nedg in range(3):#11
+		for nedg in range(11):#11
 			namee= namen + str(nedg*10) + '% archi/'	
 			k=3
 			listk=[]
-			while k < 5:#11
+			while k < 11:#11
 				namek= namee + 'k'+ str(k) + '/'
 				listkerr=[]				
-				for x in range(5):
+				for x in range(20):
 					namet = namek + 'Test' + str(x)
 					env=Environment((nnod+1)*10,g=Graph(), ed=nedg*0.1)
 					n=env.g.nodes[randint(0,len(env.g.nodes)-1)]	
@@ -720,6 +720,7 @@ for s in range(len(steps)):
 					#y3,y4=r.stats(10000,env.g)
 					r.visprint(env.g)
 					print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln)
+					print('num errlist=',len(o.errlist),'merda errlist:', o.errlist)
 					r.logfile(env.g,namet,steps[s],(nnod+1)*10,nedg*0.1,x,k,o)
 					plt.figure('Observer', figsize=(20,4))
 					plt.subplot(121)
@@ -737,16 +738,24 @@ for s in range(len(steps)):
 					plt.close()
 					se=0
 					aus=[]
-					z=0
-					while z < len(o.errlist):
+					if len(o.errlist) > 2: 
+						z=2
 						aus.append(o.errlist[z])
-						if len(o.errlist) >10:
-							z=z+int(len(o.errlist)/10)
+						if len(o.errlist) >= 12:
+							z=z+(len(o.errlist)/10)
+							while int(z) < len(o.errlist):
+								aus.append(o.errlist[int(z)])
+								z=z+z
 						else:
-							z=z+len(o.errlist)-1
-					for y in range(len(aus)):
-						se=se+aus[y]
-					listkerr.append(se/len(aus))
+							z=z+1
+							while z < len(o.errlist):
+								aus.append(o.errlist[z])
+								z=z+z			
+								
+						for y in range(len(aus)):
+							se=se+aus[y]
+						print('gradnezza aus:', len(aus))
+						listkerr.append(se/len(aus))
 					env.destroye()
 					del env.g
 					del env
