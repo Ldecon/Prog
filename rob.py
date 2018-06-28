@@ -2,6 +2,7 @@ from env import Node, Edge, Graph, Environment
 from random import randint
 import matplotlib.pyplot as plt
 import math
+import os
 
 class Ndij:
 	def __init__(self,n):
@@ -13,11 +14,68 @@ class Observer:
 	def __init__(self,obspos):
 		self.obspos=obspos
 		self.listidln=[]
+		self.predictionlist=[]
+		self.errlist=[]
+		
+		########### Nearest Neighbor ############
+		
+	def listelemeq(self, l):
+		f=1
+		for x in range(len(l)-1):
+			if (l[x] - l[x+1]) != 0:
+				f=0
+				break
+		return f
+	
+	def nn(self,k,listk):       #listk= sequenza di k elementi da confrontare
+		guess=0
+		#aus=[]												#debug
+		if len(self.listidln) > k:
+			eq=-1
+			sumel=0
+			for x in range(len(self.listidln)-k):
+				subl=[]
+				s=[]
+				for y in range(k):
+					subl.append(self.listidln[x+y])
+					s.append(listk[y]-subl[y])
+				if self.listelemeq(s)==1 :
+					if eq < 0 or s[0] == 0 :
+							eq=abs(s[0])
+			#				aus=subl.copy()				#debug
+							guess=self.listidln[x+k]		#differenza elemento per elemento, se differenza costante, il numero da indovinare sarà crescente/decrescente rispetto ai precendenti	
+					else:
+						if eq < 0 or eq > abs(s[0]): 
+							eq=abs(s[0])
+			#				aus=subl.copy()				#debug
+							guess=self.listidln[x+k]+s[0]
+				else:
+					sumel=0
+					for z in range(len(s)):
+						sumel=sumel+s[z]
+					if  eq < 0 or eq > abs(sumel):
+			#			aus=subl.copy()					#debug
+						eq=abs(sumel)
+						guess=self.listidln[x+k]
+					
+				
+		else:
+			print('not enough elements')
+			return None
+		#print('lista da cercare:',listk,'aus=',aus)		#debug
+		#print('scelto:',guess)								#debug
+		return guess
+	
+		def __del__(self):
+			del self
 
 class Robot:
 	def __init__(self,startpos):
 		self.actualpos=startpos
 		self.possiblepos=self.actualpos.adj
+		
+	def __del__(self):
+		del self
 	
 	def newactualpos(self,p):
 		self.actualpos=p
@@ -391,31 +449,61 @@ class Robot:
 				aus=n.adj[x]
 		return aus
 
-	def utidlimp(self,ns,g,o):
+	def utidlimp(self,ns,g,o,k):
 		obscountidl=0
 		self.updatevcount(self.actualpos,1)
 		self.setavgidln(self.actualpos,1)
 		avgg=self.avgidlg(g,1)
-		print("avgg=",avgg)
+		#print("avgg=",avgg)
 		x=1
+		lk=[]
+		prediction=None
+		flag=0
 		while x < ns:
 			next=self.nextstepidlimp(x+1,self.actualpos,g)
+			distedg=g.getedge(self.actualpos,next).w
 			self.actualpos=next
 			obscountidl=obscountidl+1
 			self.setavgidln(self.actualpos,x+1)
 			avgg=self.avgidlg(g,x+1)
-			print("avgg=",avgg)
+			#print("avgg=",avgg)
 			self.updatevcount(self.actualpos,x+1)
 			#print(self.actualpos.pos)
-			if self.actualpos == o.obspos:
+				
+			if len(o.listidln) > k and flag==0:							#guessing
+				flag=1
+				lk=[] 											#	
+				for y in range(k):								#
+					lk.append(o.listidln[len(o.listidln)-k+y])	#
+				prediction=o.nn(k,lk)							#
+																#
+				
+				
+
+			
+			if self.actualpos == o.obspos:		
 				o.listidln.append(obscountidl)
+				if len(o.listidln) > k+1:
+					#if obscountidl == prediction:
+					#		print(obscountidl,' = ',prediction,' predizione dell\'osservatore esatta')
+					#else:
+					#	print(obscountidl,' != ',prediction,' predizione dell\'osservatore sbagliata')
+					o.errlist.append((obscountidl-prediction)**2)
+					o.predictionlist.append(prediction)
+				flag=0
 				obscountidl=0
-			x=x+1
+				
+			
+			x=x+int(distedg)
+		
 			
 	
 	def visprint(self,g):
+		nvis=0
 		for x in range(len(g.nodes)):
-			print('Node:',g.nodes[x].pos,'imp:',g.nodes[x].imp,'visits:',g.nodes[x].visitcount, 'idleness avg:',g.nodes[x].nidlavg,' percentuale:',(g.nodes[x].visitcount/10000)*100,'%')
+			nvis=nvis+g.nodes[x].visitcount
+		for x in range(len(g.nodes)):
+			print('Node:',g.nodes[x].pos,'imp:',g.nodes[x].imp,'visits:',g.nodes[x].visitcount, 'idleness avg:',g.nodes[x].nidlavg,' percentuale:',(g.nodes[x].visitcount/nvis)*100,'%')
 
 
 		####################### earth mover's distance ###############################################
@@ -459,9 +547,89 @@ class Robot:
 		
 		
 	
+	def logfile(self,g,name,nstep,nnodes,nedges,nprove,k,o):
+		ncomp=name + '.txt'
+		os.makedirs(os.path.dirname(ncomp), exist_ok=True)
+		f=open(ncomp,"w")
+		f.write('Logfile\n')
+		f.write(str(nstep))
+		f.write(' Steps con ')
+		f.write(str(nnodes))
+		f.write(' Nodi al ')
+		f.write(str(nedges*100))
+		f.write('% di archi -')
+		f.write('Prova numero ')
+		f.write(str(nprove))
+		f.write(' k= ')
+		f.write(str(k))
+		f.write('\n\nStruttura grafo\n\n')
+		for a in g.matnodes:
+			x=g.getnode(a)
+			f.write(x.pos)
+			f.write(', coord=(')
+			f.write(str(x.cx))
+			f.write(',')
+			f.write(str(x.cy))
+			f.write(') i=')
+			f.write(str(x.imp))
+			f.write(':')
+			for n in x.adj:
+				f.write(' ')
+				f.write(n.pos)
+			f.write('\n')
+		for x in range(len(g.edges)):
+			f.write('[')
+			f.write(str(g.edges[x].n1.pos))
+			f.write(',')
+			f.write(str(g.edges[x].n2.pos))
+			f.write(', w=')
+			f.write(str(g.edges[x].w))
+			f.write(']\n')
+		f.write('\n\nVisite grafo\n\n')
+		for x in range(len(g.nodes)):
+			f.write('Node: ')
+			f.write(str(g.nodes[x].pos))
+			f.write(' imp: ')
+			f.write(str(g.nodes[x].imp))
+			f.write(' visits: ')
+			f.write(str(g.nodes[x].visitcount))
+			f.write(' idleness avg: ')
+			f.write(str(g.nodes[x].nidlavg))
+			f.write(' percentuale: ')
+			nvis=0
+			for y in range(len(g.nodes)):
+				nvis=nvis+g.nodes[y].visitcount
+			f.write(str((g.nodes[x].visitcount/nvis)*100))
+			f.write('%')
+			f.write('\n')
+		
+		f.write('\nOsservatore\n\n')
+		f.write('Nodo osservato: ')
+		f.write(str(o.obspos.pos))
+		f.write('\nLista idleness\n[ ')
+		for x in range(len(o.listidln)):
+			f.write(' ')
+			f.write(str(o.listidln[x]))
+			f.write(' ')
+		f.write(']')
+		f.write('\nLista previsioni\n[ ')
+		for x in range(len(o.predictionlist)):
+			f.write(' ')
+			f.write(str(o.predictionlist[x]))
+			f.write(' ')
+		f.write(']')
+		f.write('\nLista errore previsioni\n[ ')
+		for x in range(len(o.errlist)):
+			f.write(' ')
+			f.write(str(o.errlist[x]))
+			f.write(' ')
+		f.write(']')
+		f.close()
+		
 	
-		
-		
+				
+				
+				
 		
 		
 
@@ -525,29 +693,54 @@ plt.ylabel('comp values')
 plt.title('histograms comparison')
 plt.show()
 '''
-env=Environment(50,ed=1)
-n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
-r=Robot(n)
-o=Observer(env.g.nodes[randint(0,len(env.g.nodes)-1)])
-env.g.printg()	
-env.g.printedges()
-print('Mode: ut')
-r.utidlimp(5000,env.g,o)
-#y3,y4=r.stats(10000,env.g)
-r.visprint(env.g)
-print('osservatore: (nodo:',o.obspos.pos,') ', o.listidln)
-listply=[]
-for x in range(len(o.listidln)):
-	c=0
-	for y in range(o.listidln[x]):
-		listply.append(c)
-		c=c+1
+
+
+steps=[50000,100000,150000]
+for s in range(len(steps)):
+	names= 'log/' + str(steps[s]) + 'steps/'
+	k=3
+	while k < 11:#11
+		namek= names + 'k'+ str(k) + '/'
+		for nnod in range(10):#10
+			namen=namek + str((nnod+1)*10) + 'nodi/'
+			for nedg in range(11):#11
+				namee= namen + str(nedg*10) + '% archi/'
+				for x in range(10): #20
+					namet = namee + 'Test' + str(x)
+					env=Environment((nnod+1)*10,g=Graph(), ed=nedg*0.1)
+					n=env.g.nodes[randint(0,len(env.g.nodes)-1)]	
+					r=Robot(n)
+					o=Observer(env.g.nodes[randint(0,len(env.g.nodes)-1)])
+					env.g.printg()	
+					env.g.printedges()
+					print('Mode: ut')
+					r.utidlimp(5000,env.g,o,5)	
+					#y3,y4=r.stats(10000,env.g)
+					r.visprint(env.g)
+					print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln)
+					r.logfile(env.g,namet,steps[s],(nnod+1)*10,nedg*0.1,x,k,o)
+					plt.figure('Observer', figsize=(20,4))
+					plt.subplot(121)
+					plt.plot(o.listidln)
+					plt.xlabel('t')
+					plt.ylabel('idleness')
+					plt.title('Idleness observed')
+					plt.subplot(122)
+					plt.plot(o.errlist)
+					plt.title('Observer error prediction')
+					plt.ylabel('Square error')
+					plt.xlabel('t')
+					plt.savefig(namet)
+					#plt.show()
+					plt.close()
+					env.destroye()
+					del env.g
+					del env
+					del r
+					del o
 		
-plt.plot(listply)
-plt.show()
-
-
-
+		k=k+1
+	
 
 
 
