@@ -36,7 +36,7 @@ class Edge:
 		self.w=math.sqrt(((n1.cx-n2.cx)**2)+((n1.cy-n2.cy)**2))	
 		
 class Graph:
-	def __init__(self,numnodes=0, planex=100, planey=100):   		#plane=grandezza piano cartesiano default 100x100
+	def __init__(self,numnodes=0, planex=20, planey=20):   		#plane=grandezza piano cartesiano default 20x20
 		self.numnodes=numnodes
 		self.nodes=[]
 		self.edges=[]
@@ -76,6 +76,7 @@ class Graph:
 			
 	def addnode(self,n):
 		if n not in self.matnodes:
+			print(len(self.dispcoord))
 			r=randint(0,len(self.dispcoord)-1)
 			n.cx=self.dispcoord[r][0]
 			n.cy=self.dispcoord[r][1]
@@ -202,8 +203,9 @@ class Graph:
 		while len(self.nodes) :
 			del self.matnodes[self.nodes[0]]
 			self.remnode(self.nodes[0])
+		while len(self.dispcoord):
+			self.dispcoord.pop(0)
 		
-			
 	def __del__(self):
 		del self	
 			
@@ -320,4 +322,7 @@ class Environment:
 			
 			
 
-	
+
+
+
+
