@@ -720,7 +720,7 @@ for s in range(len(steps)):
 					#y3,y4=r.stats(10000,env.g)
 					r.visprint(env.g)
 					print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln)
-					print('num errlist=',len(o.errlist),'merda errlist:', o.errlist)
+					
 					r.logfile(env.g,namet,steps[s],(nnod+1)*10,nedg*0.1,x,k,o)
 					plt.figure('Observer', figsize=(20,4))
 					plt.subplot(121)
@@ -754,7 +754,7 @@ for s in range(len(steps)):
 								
 						for y in range(len(aus)):
 							se=se+aus[y]
-						print('gradnezza aus:', len(aus))
+						#print('gradnezza aus:', len(aus))
 						listkerr.append(se/len(aus))
 					env.destroye()
 					del env.g
