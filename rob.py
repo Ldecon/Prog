@@ -717,7 +717,7 @@ for s in range(len(steps)):
 					env.g.printg()	
 					env.g.printedges()
 					print('Mode: ut')
-					r.utidlimp(steps[s],env.g,o,5)	
+					r.utidlimp(steps[s],env.g,o,k)	
 					#y3,y4=r.stats(10000,env.g)
 					r.visprint(env.g)
 					print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln)					
