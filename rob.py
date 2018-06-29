@@ -483,14 +483,14 @@ class Robot:
 			
 			if self.actualpos == o.obspos:		
 				o.listidln.append(obscountidl)
-				if len(o.listidln) > k+1:
+				if len(o.listidln) > k and flag==1:
 					#if obscountidl == prediction:
 					#		print(obscountidl,' = ',prediction,' predizione dell\'osservatore esatta')
 					#else:
 					#	print(obscountidl,' != ',prediction,' predizione dell\'osservatore sbagliata')
 					o.errlist.append((obscountidl-prediction)**2)
 					o.predictionlist.append(prediction)
-				flag=0
+					flag=0
 				obscountidl=0
 				
 			
@@ -695,7 +695,8 @@ plt.show()
 '''
 
 
-steps=[50000,100000,150000]
+#steps=[50000,100000,150000]
+steps=[15000]
 for s in range(len(steps)):
 	names= 'log/' + str(steps[s]) + 'steps/'
 	for nnod in range(10):#10
@@ -716,11 +717,10 @@ for s in range(len(steps)):
 					env.g.printg()	
 					env.g.printedges()
 					print('Mode: ut')
-					r.utidlimp(5000,env.g,o,5)	
+					r.utidlimp(steps[s],env.g,o,5)	
 					#y3,y4=r.stats(10000,env.g)
 					r.visprint(env.g)
-					print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln)
-					
+					print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln)					
 					r.logfile(env.g,namet,steps[s],(nnod+1)*10,nedg*0.1,x,k,o)
 					plt.figure('Observer', figsize=(20,4))
 					plt.subplot(121)
@@ -764,7 +764,8 @@ for s in range(len(steps)):
 				se=0
 				for y in range(len(listkerr)):
 					se=se+listkerr[y]
-				listk.append(se/len(listkerr))
+				if len(listkerr)>0:
+					listk.append(se/len(listkerr))
 				k=k+1
 			lisx=[]
 			for x in range(len(listk)):
