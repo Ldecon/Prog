@@ -26,6 +26,20 @@ class Observer:
 				f=0
 				break
 		return f
+
+	def numpredex(self):	   			#numero elemento esatto della predizione (primo elemento parte da 0)
+		if len(self.errlist) > 0:
+			x = len(self.errlist)-1
+			while self.errlist[x] == 0:
+				x=x-1
+				if x < 0:
+					break
+			if x != len(self.errlist):
+				return x+1
+			else:
+				return -1
+		else:
+			return -1
 	
 	def nn(self,k,listk):       #listk= sequenza di k elementi da confrontare
 		guess=0
@@ -43,9 +57,9 @@ class Observer:
 					if eq < 0 or s[0] == 0 :
 							eq=abs(s[0])
 			#				aus=subl.copy()				#debug
-							guess=self.listidln[x+k]		#differenza elemento per elemento, se differenza costante, il numero da indovinare sarà crescente/decrescente rispetto ai precendenti	
+							guess=self.listidln[x+k]			
 					else:
-						if eq < 0 or eq > abs(s[0]): 
+						if eq < 0 or eq > abs(s[0]): 		#differenza elemento per elemento, se differenza costante, il numero da indovinare sarà crescente/decrescente rispetto ai precendenti
 							eq=abs(s[0])
 			#				aus=subl.copy()				#debug
 							guess=self.listidln[x+k]+s[0]
@@ -624,6 +638,8 @@ class Robot:
 			f.write(str(o.errlist[x]))
 			f.write(' ')
 		f.write(']')
+		f.write('\nNumero tentativi previsione esatta: ')
+		f.write(str(o.numpredex()))
 		f.close()
 		
 	
@@ -695,19 +711,22 @@ plt.show()
 '''
 
 
-#steps=[50000,100000,150000]
-steps=[15000]
+#steps=[15000,50000,100000]
+steps=[50000,100000]
 for s in range(len(steps)):
-	names= 'log/' + str(steps[s]) + 'steps/'
+	names= 'log2/' + str(steps[s]) + 'steps/'
 	for nnod in range(10):#10
 		namen=names + str((nnod+1)*10) + 'nodi/'
 		for nedg in range(11):#11
 			namee= namen + str(nedg*10) + '% archi/'	
 			k=3
-			listk=[]
+			listk=[]				#lista k media
+			listp=[]				#lista predizione media su k
+			listnp=[]				#lista non predizioni su k
 			while k < 11:#11
 				namek= namee + 'k'+ str(k) + '/'
-				listkerr=[]				
+				listkerr=[]			#lista errore quadratico sui test 
+				listpre=[]			#lista predizione su test
 				for x in range(20):
 					namet = namek + 'Test' + str(x)
 					env=Environment((nnod+1)*10,g=Graph(), ed=nedg*0.1)
@@ -741,8 +760,8 @@ for s in range(len(steps)):
 					if len(o.errlist) > 2: 
 						z=2
 						aus.append(o.errlist[z])
-						if len(o.errlist) >= 12:
-							z=z+(len(o.errlist)/10)
+						if len(o.errlist) >= 7:
+							z=z+(len(o.errlist)/5)
 							while int(z) < len(o.errlist):
 								aus.append(o.errlist[int(z)])
 								z=z+z
@@ -756,12 +775,35 @@ for s in range(len(steps)):
 							se=se+aus[y]
 						#print('gradnezza aus:', len(aus))
 						listkerr.append(se/len(aus))
+					listpre.append(o.numpredex())
 					env.destroye()
 					del env.g
 					del env
 					del r
 					del o
+				lisx=[]
+				for y in range(20):
+					lisx.append(y)
+				plt.plot(lisx,listpre)
+				plt.xlabel('#test')
+				plt.ylabel('#prediction')
+				namepg=namee+ 'Grafico numero predizione k' + str(k)
+				plt.title('Grafico prima predizione esatta (-1 non esiste)')
+				plt.savefig(namepg)
+				plt.close()
 				se=0
+				sn=0
+				for y in range(len(listpre)):
+					if listpre[y] >=0:
+						se=se+listpre[y]
+					else:
+						sn=sn+1
+				if len(listpre)-sn > 0:
+					listp.append(se/(len(listpre)-sn))
+				else:
+					listp.append(-1)
+				listnp.append(sn)
+				se=0				
 				for y in range(len(listkerr)):
 					se=se+listkerr[y]
 				if len(listkerr)>0:
@@ -769,8 +811,7 @@ for s in range(len(steps)):
 				k=k+1
 			lisx=[]
 			for x in range(len(listk)):
-				lisx.append(x+3)
-				
+				lisx.append(x+3)	
 			plt.plot(lisx,listk)
 			plt.xlabel('k')
 			plt.ylabel('MSE')
@@ -779,6 +820,21 @@ for s in range(len(steps)):
 			plt.savefig(namg)
 			plt.close()
 			
+			plt.figure('prediction period', figsize=(20,4))
+			plt.subplot(121)
+			print('lunghezza lisx=',len(lisx), 'lunghezza listp',len(listp), 'lunghezza listnp',len(listnp))
+			plt.plot(lisx,listp)
+			plt.xlabel('k')
+			plt.ylabel('avg period')
+			plt.title('Idleness observed')
+			plt.subplot(122)
+			plt.plot(lisx,listnp)
+			plt.title('No prediction test')
+			plt.ylabel('# test')
+			plt.xlabel('k')
+			namg=namee + 'Grafico periodo predizione medio k'+ str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi'
+			plt.savefig(namg)
+			plt.close()
 	
 
 
