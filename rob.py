@@ -16,6 +16,12 @@ class Observer:
 		self.listidln=[]
 		self.predictionlist=[]
 		self.errlist=[]
+	
+	def resetobslists(self):
+		self.listidln=[]
+		self.predictionlist=[]
+		self.errlist=[]
+		
 		
 		########### Nearest Neighbor ############
 		
@@ -34,7 +40,7 @@ class Observer:
 				x=x-1
 				if x < 0:
 					break
-			if x != len(self.errlist):
+			if x != (len(self.errlist)-1):
 				return x+1
 			else:
 				return -1
@@ -80,8 +86,69 @@ class Observer:
 		#print('scelto:',guess)								#debug
 		return guess
 	
-		def __del__(self):
-			del self
+		
+	def obsprediction(self,k,matsim):
+		self.resetobslists()
+		obscountidl=0
+		lk=[]
+		prediction=None
+		flag=0
+		for x in range(len(matsim[0])):
+			
+			if len(self.listidln) > k and flag==0:							#guessing
+				flag=1														#
+				lk=[] 														#	
+				for y in range(k):											#
+					lk.append(self.listidln[len(self.listidln)-k+y])		#
+				prediction=self.nn(k,lk)									#
+																			#
+			if matsim[0][x]==self.obspos:
+				self.listidln.append(obscountidl)
+				if len(o.listidln) > k and flag==1:
+					self.errlist.append((obscountidl-prediction)**2)		#calcolo errore predizione
+					self.predictionlist.append(prediction)
+					flag=0
+				obscountidl=0
+			else:
+				obscountidl=obscountidl+1
+		
+			
+	def logfileobs(self,f):
+		f.write('\nOsservatore\n\n')
+		f.write('Nodo osservato: ')
+		f.write(str(self.obspos.pos))
+		f.write('\nLista idleness\n[ ')
+		for x in range(len(self.listidln)):
+			f.write(' ')
+			f.write(str(self.listidln[x]))
+			f.write(' ')
+		f.write(']')
+	
+	def logfileprev(self,f,k):
+		f.write('\n k= ')
+		f.write(str(k))
+		f.write('\nLista previsioni\n[ ')
+		for x in range(len(self.predictionlist)):
+			f.write(' ')
+			f.write(str(self.predictionlist[x]))
+			f.write(' ')
+		f.write(']')
+		f.write('\nLista errore previsioni\n[ ')
+		for x in range(len(self.errlist)):
+			f.write(' ')
+			f.write(str(self.errlist[x]))
+			f.write(' ')
+		f.write(']')
+		f.write('\nNumero tentativi previsione esatta: ')
+		f.write(str(self.numpredex()))
+	
+	
+	
+	
+	def __del__(self):
+		del self
+		
+		
 
 class Robot:
 	def __init__(self,startpos):
@@ -463,54 +530,33 @@ class Robot:
 				aus=n.adj[x]
 		return aus
 
-	def utidlimp(self,ns,g,o,k):
-		obscountidl=0
+	def utidlimp(self,ns,g):
+		budget=0
+		matsim=[[],[]]							#matrice simulazione [nodi che visita, tempo in budget]
 		self.updatevcount(self.actualpos,1)
 		self.setavgidln(self.actualpos,1)
 		avgg=self.avgidlg(g,1)
 		#print("avgg=",avgg)
+		matsim[0].append(self.actualpos)
+		matsim[1].append(budget)
 		x=1
-		lk=[]
-		prediction=None
-		flag=0
+
 		while x < ns:
 			next=self.nextstepidlimp(x+1,self.actualpos,g)
 			distedg=g.getedge(self.actualpos,next).w
 			self.actualpos=next
-			obscountidl=obscountidl+1
+			
 			self.setavgidln(self.actualpos,x+1)
 			avgg=self.avgidlg(g,x+1)
 			#print("avgg=",avgg)
 			self.updatevcount(self.actualpos,x+1)
 			#print(self.actualpos.pos)
-				
-			if len(o.listidln) > k and flag==0:							#guessing
-				flag=1
-				lk=[] 											#	
-				for y in range(k):								#
-					lk.append(o.listidln[len(o.listidln)-k+y])	#
-				prediction=o.nn(k,lk)							#
-																#
-				
-				
-
-			
-			if self.actualpos == o.obspos:		
-				o.listidln.append(obscountidl)
-				if len(o.listidln) > k and flag==1:
-					#if obscountidl == prediction:
-					#		print(obscountidl,' = ',prediction,' predizione dell\'osservatore esatta')
-					#else:
-					#	print(obscountidl,' != ',prediction,' predizione dell\'osservatore sbagliata')
-					o.errlist.append((obscountidl-prediction)**2)
-					o.predictionlist.append(prediction)
-					flag=0
-				obscountidl=0
-				
-			
-			x=x+int(distedg)
-		
-			
+			budget=budget+distedg
+			matsim[0].append(self.actualpos)						
+			matsim[1].append(budget)
+			x=x+1
+		return matsim
+	
 	
 	def visprint(self,g):
 		nvis=0
@@ -518,6 +564,10 @@ class Robot:
 			nvis=nvis+g.nodes[x].visitcount
 		for x in range(len(g.nodes)):
 			print('Node:',g.nodes[x].pos,'imp:',g.nodes[x].imp,'visits:',g.nodes[x].visitcount, 'idleness avg:',g.nodes[x].nidlavg,' percentuale:',(g.nodes[x].visitcount/nvis)*100,'%')
+			
+	def simprint(self,ms):
+		for x in range(len(ms[0])):
+			print('n: ',ms[0][x].pos,' t: ',ms[1][x])
 
 
 		####################### earth mover's distance ###############################################
@@ -561,10 +611,9 @@ class Robot:
 		
 		
 	
-	def logfile(self,g,name,nstep,nnodes,nedges,nprove,k,o):
-		ncomp=name + '.txt'
-		os.makedirs(os.path.dirname(ncomp), exist_ok=True)
-		f=open(ncomp,"w")
+	def logfilerob(self,f,g,nstep,nnodes,nedges,nprove,ms):
+		
+		
 		f.write('Logfile\n')
 		f.write(str(nstep))
 		f.write(' Steps con ')
@@ -574,8 +623,6 @@ class Robot:
 		f.write('% di archi -')
 		f.write('Prova numero ')
 		f.write(str(nprove))
-		f.write(' k= ')
-		f.write(str(k))
 		f.write('\n\nStruttura grafo\n\n')
 		for a in g.matnodes:
 			x=g.getnode(a)
@@ -616,31 +663,16 @@ class Robot:
 			f.write(str((g.nodes[x].visitcount/nvis)*100))
 			f.write('%')
 			f.write('\n')
+		f.write('\nSimulazione:\n\n')
+		for x in range(len(ms[0])):
+			f.write('step:' + str(x) + ' -> ')
+			f.write(' n: ')
+			f.write(str(ms[0][x].pos))
+			f.write(' t: ')
+			f.write(str(ms[1][x]))
+			f.write('\n')
+
 		
-		f.write('\nOsservatore\n\n')
-		f.write('Nodo osservato: ')
-		f.write(str(o.obspos.pos))
-		f.write('\nLista idleness\n[ ')
-		for x in range(len(o.listidln)):
-			f.write(' ')
-			f.write(str(o.listidln[x]))
-			f.write(' ')
-		f.write(']')
-		f.write('\nLista previsioni\n[ ')
-		for x in range(len(o.predictionlist)):
-			f.write(' ')
-			f.write(str(o.predictionlist[x]))
-			f.write(' ')
-		f.write(']')
-		f.write('\nLista errore previsioni\n[ ')
-		for x in range(len(o.errlist)):
-			f.write(' ')
-			f.write(str(o.errlist[x]))
-			f.write(' ')
-		f.write(']')
-		f.write('\nNumero tentativi previsione esatta: ')
-		f.write(str(o.numpredex()))
-		f.close()
 		
 	
 				
@@ -711,37 +743,44 @@ plt.show()
 '''
 
 
-#steps=[15000,50000,100000]
-steps=[50000,100000]
+sim=None
+steps=[10000]
 for s in range(len(steps)):
-	names= 'log2/' + str(steps[s]) + 'steps/'
+	names= 'log/' + str(steps[s]) + 'steps/'
 	for nnod in range(10):#10
 		namen=names + str((nnod+1)*10) + 'nodi/'
 		for nedg in range(11):#11
-			namee= namen + str(nedg*10) + '% archi/'	
-			k=3
-			listk=[]				#lista k media
-			listp=[]				#lista predizione media su k
-			listnp=[]				#lista non predizioni su k
-			while k < 11:#11
-				namek= namee + 'k'+ str(k) + '/'
-				listkerr=[]			#lista errore quadratico sui test 
-				listpre=[]			#lista predizione su test
-				for x in range(20):
-					namet = namek + 'Test' + str(x)
-					env=Environment((nnod+1)*10,g=Graph(), ed=nedg*0.1)
-					n=env.g.nodes[randint(0,len(env.g.nodes)-1)]	
-					r=Robot(n)
-					o=Observer(env.g.nodes[randint(0,len(env.g.nodes)-1)])
-					env.g.printg()	
-					env.g.printedges()
-					print('Mode: ut')
-					r.utidlimp(steps[s],env.g,o,k)	
-					#y3,y4=r.stats(10000,env.g)
-					r.visprint(env.g)
-					print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln)					
-					r.logfile(env.g,namet,steps[s],(nnod+1)*10,nedg*0.1,x,k,o)
-					plt.figure('Observer', figsize=(20,4))
+			namee= namen + str(nedg*10) + 'densità archi/'	
+			for x in range(20):
+				listk=[]				#lista k media su massimo 10 punti
+				listp=[]				#lista prima predizione su k
+				listcompk=[]			#lista predizione media completa
+				k=3
+				namet = namee + 'Test' + str(x) +'/'
+				env=Environment((nnod+1)*10,g=Graph(), ed=nedg*0.1)
+				n=env.g.nodes[randint(0,len(env.g.nodes)-1)]	
+				r=Robot(n)
+				env.g.printg()	
+				env.g.printedges()
+				print('Mode: ut')
+				sim=r.utidlimp(steps[s],env.g)
+				#y3,y4=r.stats(10000,env.g)
+				r.visprint(env.g)
+				r.simprint(sim)
+				o=Observer(env.g.nodes[randint(0,len(env.g.nodes)-1)])
+				ncomp=namet + 'log' + str(x) + '.txt'
+				os.makedirs(os.path.dirname(ncomp), exist_ok=True)
+				f=open(ncomp,"w")
+				r.logfilerob(f,env.g,steps[s],(nnod+1)*10,nedg*0.1,x,sim)
+				while k < 11:#11
+					o.obsprediction(k,sim)
+					if k==3:
+						o.logfileobs(f)
+					o.logfileprev(f,k)
+					print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln)	
+					
+					
+					plt.figure('Observer', figsize=(30,7))
 					plt.subplot(121)
 					plt.plot(o.listidln)
 					plt.xlabel('t')
@@ -752,16 +791,20 @@ for s in range(len(steps)):
 					plt.title('Observer error prediction')
 					plt.ylabel('Square error')
 					plt.xlabel('t')
-					plt.savefig(namet)
+					plt.savefig(namet + 'k' + str(k))
 					#plt.show()
 					plt.close()
+					
 					se=0
+					sc=0
 					aus=[]
-					if len(o.errlist) > 2: 
-						z=2
+					for y in range(len(o.errlist)):
+						sc=sc+o.errlist[y]
+					if len(o.errlist) > 0: 
+						z=0
 						aus.append(o.errlist[z])
-						if len(o.errlist) >= 7:
-							z=z+(len(o.errlist)/5)
+						if len(o.errlist) > 10:
+							z=z+(len(o.errlist)/10)
 							while int(z) < len(o.errlist):
 								aus.append(o.errlist[int(z)])
 								z=z+z
@@ -770,80 +813,72 @@ for s in range(len(steps)):
 							while z < len(o.errlist):
 								aus.append(o.errlist[z])
 								z=z+z			
-								
+					else:
+						z=0
+						while z < len(o.errlist):
+							aus.append(o.errlist[z])
+							z=z+z
+					if len(aus) > 0:		
 						for y in range(len(aus)):
 							se=se+aus[y]
 						#print('gradnezza aus:', len(aus))
-						listkerr.append(se/len(aus))
-					listpre.append(o.numpredex())
-					env.destroye()
-					del env.g
-					del env
-					del r
-					del o
-				lisx=[]
-				for y in range(20):
-					lisx.append(y)
-				plt.plot(lisx,listpre)
-				plt.xlabel('#test')
-				plt.ylabel('#prediction')
-				namepg=namee+ 'Grafico numero predizione k' + str(k)
-				plt.title('Grafico prima predizione esatta (-1 non esiste)')
-				plt.savefig(namepg)
-				plt.close()
-				se=0
-				sn=0
-				for y in range(len(listpre)):
-					if listpre[y] >=0:
-						se=se+listpre[y]
+						listk.append(se/len(aus))
+					if len(o.errlist) > 0:
+						listcompk.append(sc/len(o.errlist))
 					else:
-						sn=sn+1
-				if len(listpre)-sn > 0:
-					listp.append(se/(len(listpre)-sn))
-				else:
-					listp.append(-1)
-				listnp.append(sn)
-				se=0				
-				for y in range(len(listkerr)):
-					se=se+listkerr[y]
-				if len(listkerr)>0:
-					listk.append(se/len(listkerr))
-				k=k+1
-			lisx=[]
-			for x in range(len(listk)):
-				lisx.append(x+3)	
-			plt.plot(lisx,listk)
-			plt.xlabel('k')
-			plt.ylabel('MSE')
-			namg=namee + 'Grafico errore medio k' + str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi'
-			plt.title('Grafico errore medio k')
-			plt.savefig(namg)
-			plt.close()
-			
-			plt.figure('prediction period', figsize=(20,4))
-			plt.subplot(121)
-			print('lunghezza lisx=',len(lisx), 'lunghezza listp',len(listp), 'lunghezza listnp',len(listnp))
-			plt.plot(lisx,listp)
-			plt.xlabel('k')
-			plt.ylabel('avg period')
-			plt.title('Idleness observed')
-			plt.subplot(122)
-			plt.plot(lisx,listnp)
-			plt.title('No prediction test')
-			plt.ylabel('# test')
-			plt.xlabel('k')
-			namg=namee + 'Grafico periodo predizione medio k'+ str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi'
-			plt.savefig(namg)
-			plt.close()
+						listcompk.append(-1)
+					listp.append(o.numpredex())
+					
+					k=k+1
+				
+				
+				
+				lisx=[]
+				for x in range(len(listk)):
+					lisx.append(x+3)	
+				plt.figure('prediction period (max 10 points)', figsize=(30,7))
+				plt.subplot(121)
+				plt.plot(lisx,listk)
+				plt.xlabel('k')
+				plt.ylabel('MSE')
+				plt.title('Grafico errore medio k su massimo 10 punti osservati')
+				lisx=[]
+				for x in range(k-3):
+					lisx.append(x+3)				
+				plt.subplot(122)
+				plt.plot(lisx,listp)
+				plt.xlabel('k')
+				plt.ylabel('Period')
+				plt.title('Prediction')
+				namg=namet + 'Grafico errore medio su 10 punti e periodo predizione '+ str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi'
+				plt.savefig(namg)
+				plt.close()
+				f.close()
+				
+				lisx=[]
+				for x in range(len(listcompk)):
+					lisx.append(x+3)	
+				plt.figure('complete prediction period', figsize=(30,7))
+				plt.subplot(121)
+				plt.plot(lisx,listcompk)
+				plt.xlabel('k')
+				plt.ylabel('MSE')
+				plt.title('Grafico errore medio k su tutti i punti osservati')
+				lisx=[]
+				for x in range(k-3):
+					lisx.append(x+3)				
+				plt.subplot(122)
+				plt.plot(lisx,listp)
+				plt.xlabel('k')
+				plt.ylabel('Period')
+				plt.title('Prediction')
+				namg=namet + 'Grafico errore medio e periodo predizione '+ str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi'
+				plt.savefig(namg)
+				plt.close()
+				f.close()
 	
-
-
-
-
-
-
-
-
-
-
-
+			env.destroye()
+			del env.g
+			del env
+			del r
+			del o
