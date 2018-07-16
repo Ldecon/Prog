@@ -310,6 +310,42 @@ class Environment:
 				self.g.addedge(self.g.getnode(n1),self.g.getnode(n2))
 
 				r=self.file.readline()
+	
+	def logfileenv(self,f,g,nstep,nnodes,nedges,nprove,ms):   #file,graph,numsteps,numnodes,numedges,numtest,matrixsimulation
+		f.write('Logfile\n')
+		f.write(str(nstep))
+		f.write(' Steps con ')
+		f.write(str(nnodes))
+		f.write(' Nodi al ')
+		f.write(str(nedges*100))
+		f.write('% di archi -')
+		f.write('Prova numero ')
+		f.write(str(nprove))
+		f.write('\n\nStruttura grafo\n\n')
+		for a in g.matnodes:
+			x=g.getnode(a)
+			f.write(x.pos)
+			f.write(', coord=(')
+			f.write(str(x.cx))
+			f.write(',')
+			f.write(str(x.cy))
+			f.write(') i=')
+			f.write(str(x.imp))
+			f.write(':')
+			for n in x.adj:
+				f.write(' ')
+				f.write(n.pos)
+			f.write('\n')
+		for x in range(len(g.edges)):
+			f.write('[')
+			f.write(str(g.edges[x].n1.pos))
+			f.write(',')
+			f.write(str(g.edges[x].n2.pos))
+			f.write(', w=')
+			f.write(str(g.edges[x].w))
+			f.write(']\n')
+	
+	
 		
 	def destroye(self):
 		self.g.destroyg()
@@ -320,4 +356,4 @@ class Environment:
 		del self
 			
 			
-	
+
