@@ -1,5 +1,5 @@
 from env import Node, Edge, Graph, Environment
-from random import randint
+from random import randint, random
 import matplotlib.pyplot as plt
 import math
 import os
@@ -22,7 +22,14 @@ class Observer:
 		self.predictionlist=[]
 		self.errlist=[]
 		
-		
+	def __del__(self):
+		del self.obspos
+		del self.listidln
+		del self.predictionlist
+		del self.errlist
+		del self
+	
+			
 		########### Nearest Neighbor ############
 		
 	def listelemeq(self, l):
@@ -145,8 +152,7 @@ class Observer:
 	
 	
 	
-	def __del__(self):
-		del self
+
 		
 		
 
@@ -156,6 +162,8 @@ class Robot:
 		self.possiblepos=self.actualpos.adj
 		
 	def __del__(self):
+		del self.actualpos
+		del self.possiblepos
 		del self
 	
 	def newactualpos(self,p):
@@ -174,8 +182,8 @@ class Robot:
 		for x in range(len(g.nodes)):
 			g.nodes[x].passcount=0
 			g.nodes[x].visitcount=0
-		
-			
+			g.nodes[x].lastvisit=0
+			g.nodes[x].nidlavg=0
 	########## dijkstra  ########################################################################################
 	
 	def listnodesdij(self,ln):
@@ -300,7 +308,6 @@ class Robot:
 		n.visitcount=n.visitcount+1
 		n.lastvisit=t
 	
-					
 	def randomsteps(self,ns,g,m):			#numsteps,graph,matjo
 		self.resetcounts(g)
 		self.updatevaluesn(self.actualpos)
@@ -533,6 +540,7 @@ class Robot:
 	def utidlimp(self,ns,g):
 		budget=0
 		matsim=[[],[]]							#matrice simulazione [nodi che visita, tempo in budget]
+		self.resetcounts(g)
 		self.updatevcount(self.actualpos,1)
 		self.setavgidln(self.actualpos,1)
 		avgg=self.avgidlg(g,1)
@@ -557,6 +565,49 @@ class Robot:
 			x=x+1
 		return matsim
 	
+	############## ut epsilon ###########################
+	
+	def nextrandom(self,n):
+		next=n.adj[randint(0,len(n.adj)-1)]
+		return next
+	
+	def utidlimpep(self,ns,g,ep):
+		budget=0
+		matsim=[[],[]]							#matrice simulazione [nodi che visita, tempo in budget]
+		self.resetcounts(g)
+		self.updatevcount(self.actualpos,1)
+		self.setavgidln(self.actualpos,1)
+		avgg=self.avgidlg(g,1)
+		#print("avgg=",avgg)
+		matsim[0].append(self.actualpos)
+		matsim[1].append(budget)
+		x=1
+
+		while x < ns:
+			r=round(random(),1)
+			if r > ep:
+				next=self.nextstepidlimp(x+1,self.actualpos,g)
+			else:
+				next=self.nextrandom(self.actualpos)			#random choise
+			distedg=g.getedge(self.actualpos,next).w
+			self.actualpos=next
+			self.setavgidln(self.actualpos,x+1)
+			avgg=self.avgidlg(g,x+1)
+			#print("avgg=",avgg)
+			self.updatevcount(self.actualpos,x+1)
+			#print(self.actualpos.pos)
+			budget=budget+distedg
+			matsim[0].append(self.actualpos)						
+			matsim[1].append(budget)
+			x=x+1
+		return matsim
+	
+	
+	def getvis(self, g):
+		lvis=[]
+		for x in range(len(g.nodes)):
+			lvis.append(g.nodes[x].visitcount)
+		return lvis
 	
 	def visprint(self,g):
 		nvis=0
@@ -609,43 +660,8 @@ class Robot:
 		
 		
 		
-		
-	
-	def logfilerob(self,f,g,nstep,nnodes,nedges,nprove,ms):
-		
-		
-		f.write('Logfile\n')
-		f.write(str(nstep))
-		f.write(' Steps con ')
-		f.write(str(nnodes))
-		f.write(' Nodi al ')
-		f.write(str(nedges*100))
-		f.write('% di archi -')
-		f.write('Prova numero ')
-		f.write(str(nprove))
-		f.write('\n\nStruttura grafo\n\n')
-		for a in g.matnodes:
-			x=g.getnode(a)
-			f.write(x.pos)
-			f.write(', coord=(')
-			f.write(str(x.cx))
-			f.write(',')
-			f.write(str(x.cy))
-			f.write(') i=')
-			f.write(str(x.imp))
-			f.write(':')
-			for n in x.adj:
-				f.write(' ')
-				f.write(n.pos)
-			f.write('\n')
-		for x in range(len(g.edges)):
-			f.write('[')
-			f.write(str(g.edges[x].n1.pos))
-			f.write(',')
-			f.write(str(g.edges[x].n2.pos))
-			f.write(', w=')
-			f.write(str(g.edges[x].w))
-			f.write(']\n')
+	def logfilerob(self,f,g,nstep,nnodes,nedges,nprove,ms,ep):		#file,graph,numsteps,numnodes,numedges,numtest,matrixsimulation,epsilon
+		f.write('\n\nEPSILON= ' + str(ep)+ '\n')
 		f.write('\n\nVisite grafo\n\n')
 		for x in range(len(g.nodes)):
 			f.write('Node: ')
@@ -751,134 +767,173 @@ for s in range(len(steps)):
 		namen=names + str((nnod+1)*10) + 'nodi/'
 		for nedg in range(11):#11
 			namee= namen + str(nedg*10) + 'densità archi/'	
-			for x in range(20):
-				listk=[]				#lista k media su massimo 10 punti
-				listp=[]				#lista prima predizione su k
-				listcompk=[]			#lista predizione media completa
-				k=3
+			for x in range(10):
 				namet = namee + 'Test' + str(x) +'/'
 				env=Environment((nnod+1)*10,g=Graph(), ed=nedg*0.1)
-				n=env.g.nodes[randint(0,len(env.g.nodes)-1)]	
-				r=Robot(n)
+				start=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 				env.g.printg()	
 				env.g.printedges()
-				print('Mode: ut')
-				sim=r.utidlimp(steps[s],env.g)
-				#y3,y4=r.stats(10000,env.g)
-				r.visprint(env.g)
-				r.simprint(sim)
-				o=Observer(env.g.nodes[randint(0,len(env.g.nodes)-1)])
+				print('Mode: utep')
 				ncomp=namet + 'log' + str(x) + '.txt'
 				os.makedirs(os.path.dirname(ncomp), exist_ok=True)
 				f=open(ncomp,"w")
-				r.logfilerob(f,env.g,steps[s],(nnod+1)*10,nedg*0.1,x,sim)
-				while k < 11:#11
-					o.obsprediction(k,sim)
-					if k==3:
-						o.logfileobs(f)
-					o.logfileprev(f,k)
-					print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln)	
+				env.logfileenv(f,env.g,steps[s],(nnod+1)*10,nedg*0.1,x,sim)
+				obsnode=env.g.nodes[randint(0,len(env.g.nodes)-1)]
+				
+				for epsilon in range(11):
+					listk=[]				#lista k media su massimo 10 punti
+					listp=[]				#lista prima predizione su k
+					listcompk=[]			#lista predizione media completa
+					k=3
+					r=Robot(start)
+					sim=r.utidlimpep(steps[s],env.g,(epsilon*0.1))
+					#y3,y4=r.stats(10000,env.g)
+					r.visprint(env.g)
+					r.simprint(sim)
+					r.logfilerob(f,env.g,steps[s],(nnod+1)*10,nedg*0.1,x,sim,(epsilon*0.1))
+					o=Observer(obsnode)
+					nameep=namet + 'epsilon' +str(epsilon*10) + '/'
+					os.makedirs(os.path.dirname(nameep), exist_ok=True)
 					
 					
-					plt.figure('Observer', figsize=(30,7))
-					plt.subplot(121)
-					plt.plot(o.listidln)
-					plt.xlabel('t')
-					plt.ylabel('idleness')
-					plt.title('Idleness observed')
-					plt.subplot(122)
-					plt.plot(o.errlist)
-					plt.title('Observer error prediction')
-					plt.ylabel('Square error')
-					plt.xlabel('t')
-					plt.savefig(namet + 'k' + str(k))
-					#plt.show()
-					plt.close()
-					
-					se=0
-					sc=0
-					aus=[]
-					for y in range(len(o.errlist)):
-						sc=sc+o.errlist[y]
-					if len(o.errlist) > 0: 
-						z=0
-						aus.append(o.errlist[z])
-						if len(o.errlist) > 10:
-							z=z+(len(o.errlist)/10)
-							while int(z) < len(o.errlist):
-								aus.append(o.errlist[int(z)])
-								z=z+z
+					while k < 11:#11
+						o.obsprediction(k,sim)
+						if k==3:
+							o.logfileobs(f)
+						o.logfileprev(f,k)
+						print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln)	
+						
+						
+						lisv=r.getvis(env.g)
+						lnn=r.listnamepos(env.g.nodes)
+						ls=range(len(lnn))
+						plt.figure('Visits',figsize=(20,4))
+						plt.bar(ls,lisv,color='g')
+						plt.xticks(ls,lnn,rotation='vertical')
+						for i in range(len(ls)):
+							if lnn[i][0]=='C':
+								plt.bar(i,lisv[i],color='r',align='center')
+						plt.title('Robot visits')
+						plt.savefig(namet + 'visits ep' + str(epsilon*10))
+						plt.close()
+						
+						plt.figure('Observer', figsize=(30,7))
+						plt.subplot(121)
+						plt.plot(o.listidln)
+						plt.xlabel('t')
+						plt.ylabel('idleness')
+						plt.title('Idleness observed')
+						plt.subplot(122)
+						plt.plot(o.errlist)
+						plt.title('Observer error prediction')
+						plt.ylabel('Square error')
+						plt.xlabel('t')
+						plt.savefig(nameep + 'k' + str(k) + 'epsilon' + str(epsilon*10))
+						#plt.show()
+						plt.close()
+						
+						se=0
+						sc=0
+						aus=[]
+						for y in range(len(o.errlist)):
+							sc=sc+o.errlist[y]
+						if len(o.errlist) > 0: 
+							z=0
+							aus.append(o.errlist[z])
+							if len(o.errlist) > 10:
+								z=z+(len(o.errlist)/10)
+								while int(z) < len(o.errlist):
+									aus.append(o.errlist[int(z)])
+									z=z+z
+							else:
+								z=z+1
+								while z < len(o.errlist):
+									aus.append(o.errlist[z])
+									z=z+z			
 						else:
-							z=z+1
+							z=0
 							while z < len(o.errlist):
 								aus.append(o.errlist[z])
-								z=z+z			
-					else:
-						z=0
-						while z < len(o.errlist):
-							aus.append(o.errlist[z])
-							z=z+z
-					if len(aus) > 0:		
-						for y in range(len(aus)):
-							se=se+aus[y]
-						#print('gradnezza aus:', len(aus))
-						listk.append(se/len(aus))
-					if len(o.errlist) > 0:
-						listcompk.append(sc/len(o.errlist))
-					else:
-						listcompk.append(-1)
-					listp.append(o.numpredex())
+								z=z+z
+						if len(aus) > 0:		
+							for y in range(len(aus)):
+								se=se+aus[y]
+							#print('gradnezza aus:', len(aus))
+							listk.append(se/len(aus))
+						if len(o.errlist) > 0:
+							listcompk.append(sc/len(o.errlist))
+						else:
+							listcompk.append(-1)
+						listp.append(o.numpredex())
+						
+						k=k+1
+				
+				
+				
+					lisx=[]
+					for x in range(len(listk)):
+						lisx.append(x+3)	
+					plt.figure('prediction period (max 10 points)', figsize=(30,7))
+					plt.subplot(121)
+					plt.plot(lisx,listk)
+					plt.xlabel('k')
+					plt.ylabel('MSE')
+					plt.title('Grafico errore medio k su massimo 10 punti osservati con epsilon' +str(epsilon*10))
+					lisx=[]
+					for x in range(k-3):
+						lisx.append(x+3)				
+					plt.subplot(122)
+					plt.plot(lisx,listp)
+					plt.xlabel('k')
+					plt.ylabel('Period')
+					plt.title('Prediction')
+					namg=nameep + 'Grafico errore medio su 10 punti e periodo predizione '+ str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi con epsilon' +str(epsilon*10)
+					plt.savefig(namg)
+					plt.close()
 					
-					k=k+1
-				
-				
-				
-				lisx=[]
-				for x in range(len(listk)):
-					lisx.append(x+3)	
-				plt.figure('prediction period (max 10 points)', figsize=(30,7))
-				plt.subplot(121)
-				plt.plot(lisx,listk)
-				plt.xlabel('k')
-				plt.ylabel('MSE')
-				plt.title('Grafico errore medio k su massimo 10 punti osservati')
-				lisx=[]
-				for x in range(k-3):
-					lisx.append(x+3)				
-				plt.subplot(122)
-				plt.plot(lisx,listp)
-				plt.xlabel('k')
-				plt.ylabel('Period')
-				plt.title('Prediction')
-				namg=namet + 'Grafico errore medio su 10 punti e periodo predizione '+ str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi'
-				plt.savefig(namg)
-				plt.close()
+					
+					lisx=[]
+					for x in range(len(listcompk)):
+						lisx.append(x+3)	
+					plt.figure('complete prediction period', figsize=(30,7))
+					plt.subplot(121)
+					plt.plot(lisx,listcompk)
+					plt.xlabel('k')
+					plt.ylabel('MSE')
+					plt.title('Grafico errore medio k su tutti i punti osservati con epsilon' + str(epsilon*10))
+					lisx=[]
+					for x in range(k-3):
+						lisx.append(x+3)				
+					plt.subplot(122)
+					plt.plot(lisx,listp)
+					plt.xlabel('k')
+					plt.ylabel('Period')
+					plt.title('Prediction')
+					namg=nameep + 'Grafico errore medio e periodo predizione '+ str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi con epsilon' + str(epsilon*10)
+					plt.savefig(namg)
+					plt.close()
+					
+					
+					del r
+					del o
 				f.close()
+				env.destroye()
+				del env.g
+				del env
 				
-				lisx=[]
-				for x in range(len(listcompk)):
-					lisx.append(x+3)	
-				plt.figure('complete prediction period', figsize=(30,7))
-				plt.subplot(121)
-				plt.plot(lisx,listcompk)
-				plt.xlabel('k')
-				plt.ylabel('MSE')
-				plt.title('Grafico errore medio k su tutti i punti osservati')
-				lisx=[]
-				for x in range(k-3):
-					lisx.append(x+3)				
-				plt.subplot(122)
-				plt.plot(lisx,listp)
-				plt.xlabel('k')
-				plt.ylabel('Period')
-				plt.title('Prediction')
-				namg=namet + 'Grafico errore medio e periodo predizione '+ str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi'
-				plt.savefig(namg)
-				plt.close()
-				f.close()
-	
-			env.destroye()
-			del env.g
-			del env
-			del r
-			del o
+				
+				
+			
+			
+			
+
+
+
+
+
+
+
+
+
+
+
