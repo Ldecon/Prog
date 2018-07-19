@@ -92,7 +92,7 @@ class Observer:
 		#print('lista da cercare:',listk,'aus=',aus)		#debug
 		#print('scelto:',guess)								#debug
 		return guess
-	
+		
 		
 	def obsprediction(self,k,matsim):
 		self.resetobslists()
@@ -118,6 +118,49 @@ class Observer:
 				obscountidl=0
 			else:
 				obscountidl=obscountidl+1
+	
+	def vark(self,k):
+		z=0
+		x=len(self.errlist)-1
+		if x >=0:
+			if self.errlist[x] != 0:
+				x=x-1
+				while x >= 0:
+					if self.errlist[x]==0:
+						while x >=0 and self.errlist[x]==0:
+							z=z+1
+							x=x-1
+					x=x-1
+		if z > k:
+			k=k+1
+		return k				
+			
+	
+	def obspredictionvar(self,k,matsim):				#predizione con k variabile adattabile in base alla finestra di confronto
+		self.resetobslists()
+		obscountidl=0
+		lk=[]
+		prediction=None
+		flag=0
+		for x in range(len(matsim[0])):
+			k=self.vark(k)
+			if len(self.listidln) > k and flag==0:							#guessing
+				flag=1														#
+				lk=[] 														#	
+				for y in range(k):											#
+					lk.append(self.listidln[len(self.listidln)-k+y])		#
+				prediction=self.nn(k,lk)									#
+																			#
+			if matsim[0][x]==self.obspos:
+				self.listidln.append(obscountidl)
+				if len(o.listidln) > k and flag==1:
+					self.errlist.append((obscountidl-prediction)**2)		#calcolo errore predizione
+					self.predictionlist.append(prediction)
+					flag=0
+				obscountidl=0
+			else:
+				obscountidl=obscountidl+1
+		print('k=',k)
 		
 			
 	def logfileobs(self,f):
@@ -584,11 +627,12 @@ class Robot:
 		x=1
 
 		while x < ns:
-			r=round(random(),1)
+			r=randint(1,100)
 			if r > ep:
-				next=self.nextstepidlimp(x+1,self.actualpos,g)
+				next=self.nextrandom(self.actualpos)
 			else:
-				next=self.nextrandom(self.actualpos)			#random choise
+				next=self.nextstepidlimp(x+1,self.actualpos,g)
+							#random choise
 			distedg=g.getedge(self.actualpos,next).w
 			self.actualpos=next
 			self.setavgidln(self.actualpos,x+1)
@@ -758,6 +802,7 @@ plt.title('histograms comparison')
 plt.show()
 '''
 
+ #NN k fisso, epsilon random
 
 sim=None
 steps=[10000]
@@ -786,12 +831,14 @@ for s in range(len(steps)):
 					listcompk=[]			#lista predizione media completa
 					k=3
 					r=Robot(start)
-					sim=r.utidlimpep(steps[s],env.g,(epsilon*0.1))
+					ep=100-(epsilon*10)
+					sim=r.utidlimpep(steps[s],env.g,ep)
 					#y3,y4=r.stats(10000,env.g)
 					r.visprint(env.g)
 					r.simprint(sim)
 					r.logfilerob(f,env.g,steps[s],(nnod+1)*10,nedg*0.1,x,sim,(epsilon*0.1))
 					o=Observer(obsnode)
+					
 					nameep=namet + 'epsilon' +str(epsilon*10) + '/'
 					os.makedirs(os.path.dirname(nameep), exist_ok=True)
 					
@@ -920,14 +967,39 @@ for s in range(len(steps)):
 				env.destroye()
 				del env.g
 				del env
-				
-				
-				
-			
-			
-			
 
-
+				
+'''	test k variabile		
+env=Environment(10,g=Graph(), ed=0)
+start=env.g.nodes[randint(0,len(env.g.nodes)-1)]
+env.g.printg()	
+env.g.printedges()
+print('Mode: utep')				
+obsnode=env.g.nodes[randint(0,len(env.g.nodes)-1)]		
+k=3
+r=Robot(start)
+ep=100
+sim=r.utidlimpep(10000,env.g,ep)
+#y3,y4=r.stats(10000,env.g)
+r.visprint(env.g)
+r.simprint(sim)	
+o=Observer(obsnode)
+o.obspredictionvar(k,sim)
+print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln, '\nerrlist: [', o.errlist, ']')
+plt.figure('Observer', figsize=(30,7))
+plt.subplot(121)
+plt.plot(o.listidln)
+plt.xlabel('t')
+plt.ylabel('idleness')
+plt.title('Idleness observed')
+plt.subplot(122)
+plt.plot(o.errlist)
+plt.title('Observer error prediction')
+plt.ylabel('Square error')
+plt.xlabel('t')
+plt.show()
+plt.close()
+'''
 
 
 
