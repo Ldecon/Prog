@@ -346,6 +346,8 @@ class Environment:
 			f.write(str(x.cy))
 			f.write(') i=')
 			f.write(str(x.imp))
+			f.write(' tatk=')
+			f.write(str(x.tatk))
 			f.write(':')
 			for n in x.adj:
 				f.write(' ')
