@@ -574,7 +574,7 @@ class Robot:
 		u=0
 		aus=None
 		for x in range(len(n.adj)):
-			i=((t-n.adj[x].lastvisit)*n.adj[x].imp)/g.getedge(n,n.adj[x]).w				#u(v)= (idl(v) * imp(v)) / d(v) 
+			i=((t-n.adj[x].lastvisit)*(n.adj[x].imp/n.adj[x].tatk))/g.getedge(n,n.adj[x]).w				#u(v)= (idl(v) * (imp(v)/tatk(v))) / d(v) 
 			if u < i:
 				u=i
 				aus=n.adj[x]
