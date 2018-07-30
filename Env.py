@@ -8,11 +8,13 @@ class Node:
 		self.cy=-1
 		self.adj=[]
 		self.imp=imp
-		self.visitcount=0
-		self.passcount=0
-		self.lastvisit=0
-		self.valueimp=0
-		self.nidlavg=0
+		self.visitcount=0			#contatore visite
+		self.passcount=0			#contatore passaggi
+		self.lastvisit=0			#ultima visita
+		self.valueimp=0				#valore importanza
+		self.nidlavg=0				#media adleness
+		self.tatk=0					#tempo attacco nodo
+		
 
 	def addadj(self,n):
 		if n not in self.adj:
@@ -66,7 +68,14 @@ class Graph:
 		if e:
 			return self.edges[x].w
 		return 0
-			
+	
+	def getminedgew(self):
+		s=self.edges[0].w
+		for x in range(len(self.edges)):
+			w=self.edges[x].w
+			if s > w:
+				s=w
+		return s
 			
 	def existedge(self,n1,n2):
 		e=self.getedge(n1,n2)
@@ -151,6 +160,11 @@ class Graph:
 			self.setimpn(lc[x],4)			#setta importanza nodi critici a 4
 			for y in range(len(lc[x].adj)):
 				self.cascadeimp(lc[x].adj[y],lc[x].imp)        #altro csacade aggiungere ,4
+	
+	def settatk(self):
+		w=self.getminedgew()
+		for x in range(len(self.nodes)):
+			self.nodes[x].tatk=randint(w,3*w)
 		
 	
 	def printedges(self):
@@ -164,7 +178,7 @@ class Graph:
 			return
 		for a in self.matnodes:
 			x=self.getnode(a)
-			print(x.pos, ", coord=(",x.cx,",",x.cy,") i=", x.imp, ":", end="")
+			print(x.pos, ", coord=(",x.cx,",",x.cy,") i=", x.imp, "tatk=", x.tatk, ":", end="")
 			for n in x.adj:
 				print(" ", n.pos,  end="")
 			print()
@@ -257,6 +271,7 @@ class Environment:
 				edgeposs.pop(r1)
 				
 			self.g.setimpg()
+			self.g.settatk()
 		
 		else:
 			self.file=open('Graph.txt')
@@ -355,5 +370,3 @@ class Environment:
 	def __del__(self):
 		del self
 			
-			
-
