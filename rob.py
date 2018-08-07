@@ -16,17 +16,27 @@ class Observer:
 		self.listidln=[]
 		self.predictionlist=[]
 		self.errlist=[]
-	
+		self.atklist=[]
+		self.erratklist=[]
+		self.errnotatklist=[]
+		
 	def resetobslists(self):
 		self.listidln=[]
 		self.predictionlist=[]
 		self.errlist=[]
+		self.atklist=[]
+		self.erratklist=[]
+		self.errnotatklist=[]
+		
 		
 	def __del__(self):
 		del self.obspos
 		del self.listidln
 		del self.predictionlist
 		del self.errlist
+		del self.atklist
+		del self.erratklist
+		del self.errnotatklist
 		del self
 	
 			
@@ -118,6 +128,38 @@ class Observer:
 				obscountidl=0
 			else:
 				obscountidl=obscountidl+1
+				
+	
+	def obspossatk(self,k,matsim):
+		self.resetobslists()
+		obscountidl=0
+		lk=[]
+		prediction=None
+		flag=0
+		for x in range(len(matsim[0])):
+			
+			if len(self.listidln) > k and flag==0:							#guessing
+				flag=1														#
+				lk=[] 														#	
+				for y in range(k):											#
+					lk.append(self.listidln[len(self.listidln)-k+y])		#
+				prediction=self.nn(k,lk)									#
+																			#
+			if matsim[0][x]==self.obspos:
+				self.listidln.append(obscountidl)
+				if len(o.listidln) > k and flag==1:
+					self.errlist.append((obscountidl-prediction)**2)		#calcolo errore predizione
+					self.predictionlist.append(prediction)
+					if self.obspos.tatk < prediction:						#se tempo attacco < predizione allora possibile attacco(1)
+						self.atklist.append(1)
+					else:
+						self.atklist.append(0)
+					flag=0
+				obscountidl=0
+			else:
+				obscountidl=obscountidl+1
+				
+				
 	
 	def vark(self,k):
 		z=0
@@ -160,8 +202,7 @@ class Observer:
 				obscountidl=0
 			else:
 				obscountidl=obscountidl+1
-		print('k=',k)
-		
+		print('k=',k)	
 			
 	def logfileobs(self,f):
 		f.write('\nOsservatore\n\n')
@@ -172,7 +213,7 @@ class Observer:
 			f.write(' ')
 			f.write(str(self.listidln[x]))
 			f.write(' ')
-		f.write(']')
+		f.write('] elementi: '+str(len(self.listidln)))
 	
 	def logfileprev(self,f,k):
 		f.write('\n k= ')
@@ -182,18 +223,33 @@ class Observer:
 			f.write(' ')
 			f.write(str(self.predictionlist[x]))
 			f.write(' ')
-		f.write(']')
+		f.write('] elementi: '+str(len(self.predictionlist)))
 		f.write('\nLista errore previsioni\n[ ')
 		for x in range(len(self.errlist)):
 			f.write(' ')
 			f.write(str(self.errlist[x]))
 			f.write(' ')
-		f.write(']')
+		f.write('] elementi: '+str(len(self.errlist)))
 		f.write('\nNumero tentativi previsione esatta: ')
 		f.write(str(self.numpredex()))
-	
-	
-	
+		f.write('\nLista possibili attacchi\n[')
+		for x in range(len(self.atklist)):
+			f.write(' ')
+			f.write(str(self.atklist[x]))
+			f.write(' ')
+		f.write('] elementi: '+str(len(self.atklist)))
+		f.write('\nLista errori possibili attacchi\n[')
+		for x in range(len(self.erratklist)):
+			f.write(' ')
+			f.write(str(self.erratklist[x]))
+			f.write(' ')
+		f.write('] elementi: '+str(len(self.erratklist)))
+		f.write('\nLista errori possibili NON attacchi\n[')
+		for x in range(len(self.errnotatklist)):
+			f.write(' ')
+			f.write(str(self.errnotatklist[x]))
+			f.write(' ')
+		f.write('] elementi: '+str(len(self.errnotatklist)))
 	
 
 		
@@ -808,9 +864,9 @@ sim=None
 steps=[10000]
 for s in range(len(steps)):
 	names= 'log/' + str(steps[s]) + 'steps/'
-	for nnod in range(10):#10
+	for nnod in range(5):#10 -> fino a 100nodi
 		namen=names + str((nnod+1)*10) + 'nodi/'
-		for nedg in range(11):#11
+		for nedg in range(11):#11 -> da 0 a 100% archi
 			namee= namen + str(nedg*10) + 'densità archi/'	
 			for x in range(10):
 				namet = namee + 'Test' + str(x) +'/'
@@ -844,7 +900,18 @@ for s in range(len(steps)):
 					
 					
 					while k < 11:#11
-						o.obsprediction(k,sim)
+						o.obspossatk(k,sim)
+						o.erratklist=[]									#lista errore previsioni attacco
+						for i in range(len(o.atklist)):
+							if (o.atklist[i] == 1) and (o.obspos.tatk >= o.listidln[i+k+1]):
+								o.erratklist.append(1)
+							else: 
+								o.erratklist.append(0)								  
+							if (o.atklist[i] == 0) and (o.obspos.tatk < o.listidln[i+k+1]):
+								o.errnotatklist.append(1)
+							else:
+								o.errnotatklist.append(0)
+								
 						if k==3:
 							o.logfileobs(f)
 						o.logfileprev(f,k)
@@ -876,6 +943,29 @@ for s in range(len(steps)):
 						plt.ylabel('Square error')
 						plt.xlabel('t')
 						plt.savefig(nameep + 'k' + str(k) + 'epsilon' + str(epsilon*10))
+						#plt.show()
+						plt.close()
+						
+						
+						plt.figure('Observer atk', figsize=(15,10))
+						plt.subplot(311)
+						plt.plot(o.atklist)
+						plt.xlabel('t')
+						plt.ylabel('Obs atk')
+						plt.title('Observer possible attack')
+						plt.subplot(312)
+						plt.plot(o.erratklist)
+						plt.title('Observer error prediction attack (1=error)')
+						plt.ylabel('Error atk')
+						plt.xlabel('t')
+						plt.subplot(313)
+						plt.plot(o.errnotatklist)
+						plt.title('Observer error prediction not attack (1=error)')
+						plt.ylabel('Error not atk')
+						plt.xlabel('t')
+						nameatk=nameep +'atk/'
+						os.makedirs(os.path.dirname(nameatk), exist_ok=True)
+						plt.savefig(nameatk + 'k' + str(k) + 'epsilon' + str(epsilon*10))
 						#plt.show()
 						plt.close()
 						
@@ -937,6 +1027,8 @@ for s in range(len(steps)):
 					namg=nameep + 'Grafico errore medio su 10 punti e periodo predizione '+ str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi con epsilon' +str(epsilon*10)
 					plt.savefig(namg)
 					plt.close()
+					
+					
 					
 					
 					lisx=[]
