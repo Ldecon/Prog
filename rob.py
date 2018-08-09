@@ -164,16 +164,19 @@ class Observer:
 	def vark(self,k):
 		z=0
 		x=len(self.errlist)-1
-		if x >=0:
+		if x >0: 
 			if self.errlist[x] != 0:
 				x=x-1
-				while x >= 0:
+				f=0
+				while x >= 0 and f==0:
 					if self.errlist[x]==0:
 						while x >=0 and self.errlist[x]==0:
 							z=z+1
 							x=x-1
+						f=1	
 					x=x-1
-		if z > k:
+
+		if (x > 0) and (z > k):
 			k=k+1
 		return k				
 			
@@ -202,7 +205,39 @@ class Observer:
 				obscountidl=0
 			else:
 				obscountidl=obscountidl+1
-		print('k=',k)	
+	
+	
+	def obspossatkvark(self,k,matsim):						#tempo attacco con k variabile
+		self.resetobslists()
+		obscountidl=0
+		lk=[]
+		prediction=None
+		flag=0
+		for x in range(len(matsim[0])):
+			k=self.vark(k)
+			if len(self.listidln) > k and flag==0:							#guessing
+				flag=1														#
+				lk=[] 														#	
+				for y in range(k):											#
+					lk.append(self.listidln[len(self.listidln)-k+y])		#
+				prediction=self.nn(k,lk)									#
+																			#
+			if matsim[0][x]==self.obspos:
+				self.listidln.append(obscountidl)
+				if len(o.listidln) > k and flag==1:
+					self.errlist.append((obscountidl-prediction)**2)		#calcolo errore predizione
+					self.predictionlist.append(prediction)
+					if self.obspos.tatk < prediction:						#se tempo attacco < predizione allora possibile attacco(1)
+						self.atklist.append(1)
+					else:
+						self.atklist.append(0)
+					flag=0
+				obscountidl=0
+			else:
+				obscountidl=obscountidl+1	
+		return k
+
+		
 			
 	def logfileobs(self,f):
 		f.write('\nOsservatore\n\n')
@@ -857,8 +892,8 @@ plt.ylabel('comp values')
 plt.title('histograms comparison')
 plt.show()
 '''
-
- #NN k fisso, epsilon random
+'''
+ #NN k fisso, epsilon random e tatk
 
 sim=None
 steps=[10000]
@@ -1059,7 +1094,7 @@ for s in range(len(steps)):
 				env.destroye()
 				del env.g
 				del env
-
+'''
 				
 '''	test k variabile		
 env=Environment(10,g=Graph(), ed=0)
@@ -1093,7 +1128,121 @@ plt.show()
 plt.close()
 '''
 
+ #NN k varaibile, epsilon random e tatk
 
+sim=None
+steps=[10000]
+for s in range(len(steps)):
+	names= 'log/' + str(steps[s]) + 'steps/'
+	for nnod in range(5):#10 -> fino a 100nodi
+		namen=names + str((nnod+1)*10) + 'nodi/'
+		for nedg in range(11):#11 -> da 0 a 100% archi
+			namee= namen + str(nedg*10) + 'densità archi/'	
+			for x in range(10):
+				namet = namee + 'Test' + str(x) +'/'
+				env=Environment((nnod+1)*10,g=Graph(), ed=nedg*0.1)
+				start=env.g.nodes[randint(0,len(env.g.nodes)-1)]
+				env.g.printg()	
+				env.g.printedges()
+				print('Mode: utep')
+				ncomp=namet + 'log' + str(x) + '.txt'
+				os.makedirs(os.path.dirname(ncomp), exist_ok=True)
+				f=open(ncomp,"w")
+				env.logfileenv(f,env.g,steps[s],(nnod+1)*10,nedg*0.1,x,sim)
+				obsnode=env.g.nodes[randint(0,len(env.g.nodes)-1)]
+				
+				for epsilon in range(11):
+					k=3
+					r=Robot(start)
+					ep=100-(epsilon*10)
+					sim=r.utidlimpep(steps[s],env.g,ep)
+					#y3,y4=r.stats(10000,env.g)
+					r.visprint(env.g)
+					r.simprint(sim)
+					r.logfilerob(f,env.g,steps[s],(nnod+1)*10,nedg*0.1,x,sim,(epsilon*0.1))
+					o=Observer(obsnode)
+					
+					nameep=namet + 'epsilon' +str(epsilon*10) + '/'
+					os.makedirs(os.path.dirname(nameep), exist_ok=True)
+					
+					k=o.obspossatkvark(k,sim)
+					print('\n[')
+					for x in range(len(o.errlist)):
+						print (o.errlist[x], end=' ')
+					print(']')
+					o.erratklist=[]									#lista errore previsioni attacco
+					for i in range(len(o.atklist)):
+						if (o.atklist[i] == 1) and (o.obspos.tatk >= o.listidln[i+3+1]):
+							o.erratklist.append(1)
+						else: 
+							o.erratklist.append(0)								  
+						if (o.atklist[i] == 0) and (o.obspos.tatk < o.listidln[i+3+1]):
+							o.errnotatklist.append(1)
+						else:
+							o.errnotatklist.append(0)
+					
+					o.logfileobs(f)
+					o.logfileprev(f,k)
+					print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln)	
+						
+						
+					lisv=r.getvis(env.g)
+					lnn=r.listnamepos(env.g.nodes)
+					ls=range(len(lnn))
+					plt.figure('Visits',figsize=(20,4))
+					plt.bar(ls,lisv,color='g')
+					plt.xticks(ls,lnn,rotation='vertical')
+					for i in range(len(ls)):
+						if lnn[i][0]=='C':
+							plt.bar(i,lisv[i],color='r',align='center')
+					plt.title('Robot visits')
+					plt.savefig(namet + 'visits ep' + str(epsilon*10))
+					plt.close()
+						
+					plt.figure('Observer', figsize=(30,7))
+					plt.subplot(121)
+					plt.plot(o.listidln)
+					plt.xlabel('t')
+					plt.ylabel('idleness')
+					plt.title('Idleness observed')
+					plt.subplot(122)
+					plt.plot(o.errlist)
+					plt.title('Observer error prediction')
+					plt.ylabel('Square error')
+					plt.xlabel('t')
+					plt.savefig(nameep + 'varkepsilon' + str(epsilon*10))
+					#plt.show()
+					plt.close()
+						
+						
+					plt.figure('Observer atk', figsize=(15,10))
+					plt.subplot(311)
+					plt.plot(o.atklist)
+					plt.xlabel('t')
+					plt.ylabel('Obs atk')
+					plt.title('Observer possible attack')
+					plt.subplot(312)
+					plt.plot(o.erratklist)
+					plt.title('Observer error prediction attack (1=error)')
+					plt.ylabel('Error atk')
+					plt.xlabel('t')
+					plt.subplot(313)
+					plt.plot(o.errnotatklist)
+					plt.title('Observer error prediction not attack (1=error)')
+					plt.ylabel('Error not atk')
+					plt.xlabel('t')
+					plt.savefig(nameep + 'atkvarkepsilon' + str(epsilon*10))
+					#plt.show()
+					plt.close()
+						
+
+					
+					del r
+					del o
+				f.close()
+				env.destroye()
+				del env.g
+				del env
 
 
 
