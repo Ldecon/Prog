@@ -2,10 +2,10 @@ from random import random, randint
 import math
 
 class Node:
-	def __init__(self,pos,imp=-1):
+	def __init__(self,pos,imp=-1,cx=-1,cy=-1,tatk=0):
 		self.pos=pos
-		self.cx=-1
-		self.cy=-1
+		self.cx=cx
+		self.cy=cy
 		self.adj=[]
 		self.imp=imp
 		self.visitcount=0			#contatore visite
@@ -13,7 +13,9 @@ class Node:
 		self.lastvisit=0			#ultima visita
 		self.valueimp=0				#valore importanza
 		self.nidlavg=0				#media adleness
-		self.tatk=0					#tempo attacco nodo
+		self.tatk=tatk					#tempo attacco nodo
+		self.vf=0					#flag per ambiente virtuale
+		self.vu=0					#flag di uso per combinazioni ambienti virtuali
 		
 
 	def addadj(self,n):
@@ -23,6 +25,14 @@ class Node:
 	def remadj(self,n):
 		if n in self.adj:
 			self.adj.remove(n)
+	
+	def nrimadj(self,g):
+		r=0
+		for x in range(len(g.nodes)):
+			for y in range(len(self.adj)):
+				if g.nodes[x].pos != self.adj[y].pos:
+				 	r=r+1
+		return r
 		
 	def listadj(self):		
 		return self.adj[:]
@@ -93,7 +103,35 @@ class Graph:
 			self.matnodes[n]=len(self.nodes)-1
 			self.numnodes=self.numnodes+1
 		return 
+
+	def addvirtnode(self,n):
+		if n not in self.matnodes:
+			self.nodes.append(n)
+			self.matnodes[n]=len(self.nodes)-1
+			self.numnodes=self.numnodes+1
+		return
 	
+	
+	def allvfg(self):
+		for x in range(len(self.nodes)):
+			if not self.nodes[x].vf:
+				return 0
+		return 1
+		
+	def allvug(self):
+		for x in range(len(self.nodes)):
+			if not self.nodes[x].vu:
+				return 0
+		return 1
+	
+	def resetvfg(self):											#reset vf =0
+		for x in range(len(self.nodes)):
+			self.nodes[x].vf=0
+			
+	def resetvug(self):											#reset vu =0
+		for x in range(len(self.nodes)):
+			self.nodes[x].vu=0	
+
 	def remnode(self,n):
 		self.nodes.remove(n)
 		self.numnodes=self.numnodes-1
@@ -121,6 +159,15 @@ class Graph:
 	def setimpn(self,n,i):
 		n.imp=i
 		return
+	
+	def eqgraph(self,g):
+		if len(self.edges) == len(g.edges):
+			for x in range(len(self.edges)):
+				if not self.existedge(g.edges[x].n1,g.edges[x].n2):
+					return 0
+			return 1
+		else:
+			return 0
 	
 	def critnodes(self,ln,num):			#scelta nodi critici
 		lc=[]
@@ -194,6 +241,8 @@ class Graph:
 			f.write(str(x.cy))
 			f.write(') i=')
 			f.write(str(x.imp))
+			f.write(', tatk=')
+			f.write(str(x.tatk))
 			f.write(':')
 			for n in x.adj:
 				f.write(' ')
@@ -218,9 +267,15 @@ class Graph:
 			self.remnode(self.nodes[0])
 		while len(self.dispcoord):
 			self.dispcoord.pop(0)
+		del self.edges
+		del self.nodes
+		del self.dispcoord
+		del self.matnodes
+		del self.numnodes
+		del self
 		
 	def __del__(self):
-		del self	
+		del self
 			
 
 class Environment:
@@ -302,10 +357,18 @@ class Environment:
 				while r[i]!='=':
 					i=i+1
 				i=i+1
-				while r[i]!=':':
+				while r[i]!=',':
 					s=s+r[i]
 					i=i+1
 				n.imp=float(s)
+				s=''
+				while r[i]!='=':
+					i=i+1
+				i=i+1
+				while r[i]!=':':
+					s=s+r[i]
+					i=i+1
+				n.tatk=int(s)
 				r=self.file.readline()
 			
 			while r!='':					#da file inserimento archi
@@ -321,7 +384,6 @@ class Environment:
 					i=i+1
 				n1=Node(s)
 				n2=Node(s1)
-				print(self.g.getnode(n1).pos,',',self.g.getnode(n2).pos)
 				self.g.addedge(self.g.getnode(n1),self.g.getnode(n2))
 
 				r=self.file.readline()
@@ -362,6 +424,33 @@ class Environment:
 			f.write(str(g.edges[x].w))
 			f.write(']\n')
 	
+	def logfileenvvirt(self,f,v):   #file,grafo,arrayvirt
+		for y in range(len(v)):
+			f.write('\nAmbiente virtuale n ' + str(y) + '\n\n')
+			for a in v[y].matnodes:
+				x=v[y].getnode(a)
+				f.write(x.pos)
+				f.write(', coord=(')
+				f.write(str(x.cx))
+				f.write(',')
+				f.write(str(x.cy))
+				f.write(') i=')
+				f.write(str(x.imp))
+				f.write(' tatk=')
+				f.write(str(x.tatk))
+				f.write(':')
+				for n in x.adj:
+					f.write(' ')
+					f.write(n.pos)
+				f.write('\n')
+			for x in range(len(v[y].edges)):
+				f.write('[')
+				f.write(str(v[y].edges[x].n1.pos))
+				f.write(',')
+				f.write(str(v[y].edges[x].n2.pos))
+				f.write(', w=')
+				f.write(str(v[y].edges[x].w))
+				f.write(']\n')
 	
 		
 	def destroye(self):
