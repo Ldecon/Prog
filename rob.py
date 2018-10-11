@@ -51,18 +51,18 @@ class Observer:
 		return f
 
 	def numpredex(self):	   			#numero elemento esatto della predizione (primo elemento parte da 0)
+		s=0
 		if len(self.errlist) > 0:
-			x = len(self.errlist)-1
-			while self.errlist[x] == 0:
+			x=len(self.errlist)-1
+			while self.errlist[x] == 0 and x > 0:
+				s=s+1
 				x=x-1
-				if x < 0:
-					break
-			if x != (len(self.errlist)-1):
-				return x+1
+				
+			if x >= 0:
+				return len(self.errlist) -s
 			else:
 				return -1
-		else:
-			return -1
+			
 	
 	def nn(self,k,listk):       #listk= sequenza di k elementi da confrontare
 		guess=0
@@ -237,7 +237,13 @@ class Observer:
 				obscountidl=obscountidl+1	
 		return k
 
-		
+	def counterr(self,l):
+		e=0
+		for x in range(len(l)):
+			if l[x]:
+				e=e+1
+		return e
+	
 			
 	def logfileobs(self,f):
 		f.write('\nOsservatore\n\n')
@@ -273,18 +279,21 @@ class Observer:
 			f.write(str(self.atklist[x]))
 			f.write(' ')
 		f.write('] elementi: '+str(len(self.atklist)))
+		f.write('\n n volte in attacco:' + str(self.counterr(self.atklist)))
 		f.write('\nLista errori possibili attacchi\n[')
 		for x in range(len(self.erratklist)):
 			f.write(' ')
 			f.write(str(self.erratklist[x]))
 			f.write(' ')
 		f.write('] elementi: '+str(len(self.erratklist)))
+		f.write('\n n errori attacco:' + str(self.counterr(self.erratklist)))
 		f.write('\nLista errori possibili NON attacchi\n[')
 		for x in range(len(self.errnotatklist)):
 			f.write(' ')
 			f.write(str(self.errnotatklist[x]))
 			f.write(' ')
 		f.write('] elementi: '+str(len(self.errnotatklist)))
+		f.write('\n n errori non attacco:' + str(self.counterr(self.errnotatklist)))
 	
 
 		
@@ -666,6 +675,7 @@ class Robot:
 		aus=None
 		for x in range(len(n.adj)):
 			i=((t-n.adj[x].lastvisit)*(n.adj[x].imp/n.adj[x].tatk))/g.getedge(n,n.adj[x]).w				#u(v)= (idl(v) * (imp(v)/tatk(v))) / d(v) 
+			#i=((t-n.adj[x].lastvisit)*(n.adj[x].imp))/g.getedge(n,n.adj[x]).w
 			if u < i:
 				u=i
 				aus=n.adj[x]
@@ -703,6 +713,10 @@ class Robot:
 	
 	def nextrandom(self,n):
 		next=n.adj[randint(0,len(n.adj)-1)]
+		return next
+	
+	def nextrandomv(self,n,g):
+		next=g.getnode(n).adj[randint(0,len(g.getnode(n).adj)-1)]
 		return next
 	
 	def utidlimpep(self,ns,g,ep):
@@ -823,14 +837,245 @@ class Robot:
 			f.write(str(ms[1][x]))
 			f.write('\n')
 
-		
+############################################# virtual environment ########################
+	def fact(self,n):
+		f=1
+		for x in range(n):
+			f=f*x+1
+		return f
+	
+	def existspantree(self,v,g):
+		for x in range(len(v)-1):
+			if g.eqgraph(v[x]):
+				return 1
+		return 0
+
+
+	def spantree(self, n, gr, g, v, f, deep):             #nodo, grafovirtuale, grafoambiente, listagrafivirt, flag, profondità
+		if gr.numnodes == g.numnodes:
+			return 
+		else:
+			if deep > 0:
+				
+				if len(n.adj) > 0:
+					for x in range(len(n.adj)):
+						if gr.getnode(n.adj[x]) == None:
+							gr.addvirtnode(Node(pos=n.adj[x].pos,imp=n.adj[x].imp,cx=n.adj[x].cx,cy=n.adj[x].cy,tatk=n.adj[x].tatk))
+							gr.addedge(n,n.adj[x])
+							deep=deep-1
+							n.vf=1
+							self.spantree(n.adj[x],gr,g,v,f,deep)
+			else:		
+				if n.vf:
+					if len(n.adj) >0:
+						x=0
+						while x < len(n.adj):
+							if gr.getnode(n.adj[x]) == None and not n.adj[x].vf :
+								break
+							x=x+1
+						if x < len(n.adj):
+							gr.addvirtnode(Node(pos=n.adj[x].pos,imp=n.adj[x].imp,cx=n.adj[x].cx,cy=n.adj[x].cy,tatk=n.adj[x].tatk))
+							gr.addedge(n,n.adj[x])
+							while x < len(n.adj):
+								self.spantree(n.adj[x],gr,g,v,f,deep)
+								x=x+1
+						else:
+							while x < len(n.adj):
+								if gr.getnode(n.adj[x]) == None:
+									break
+								x=x+1
+							if x < len(n.adj):
+								gr.addvirtnode(Node(pos=n.adj[x].pos,imp=n.adj[x].imp,cx=n.adj[x].cx,cy=n.adj[x].cy,tatk=n.adj[x].tatk))
+								gr.addedge(n,n.adj[x])
+								while x < len(n.adj):
+									self.spantree(n.adj[x],gr,g,v,f,deep)
+									x=x+1	
+				else:
+					if len(n.adj) >0:
+						for x in range(len(n.adj)):
+							if gr.getnode(n.adj[x]) == None:
+								gr.addvirtnode(Node(pos=n.adj[x].pos,imp=n.adj[x].imp,cx=n.adj[x].cx,cy=n.adj[x].cy,tatk=n.adj[x].tatk))
+								gr.addedge(n,n.adj[x])
+						if not f: 
+							f=1
+							n.vf=1
+						for x in range(len(n.adj)):
+							self.spantree(n.adj[x],gr,g,v,f,deep)
+							
+	def mkvirtenv(self, g,d):
+		v=[]
+		for i in range(d):	
+			for z in range(len(g.nodes)):
+				while not g.allvfg():
+
+					v.append(Graph())
+					x=len(v)-1
+					v[x].addvirtnode(Node(pos=g.nodes[z].pos,imp=g.nodes[z].imp,cx=g.nodes[z].cx,cy=g.nodes[z].cy,tatk=g.nodes[z].tatk))
+					self.spantree(g.nodes[z],v[x],g,v,0,i)
+					for y in range(len(v)):
+						if self.existspantree(v,v[x]):
+							v.pop(x)
+							break	
+				g.resetvfg()	
+			print(i)	
+		return v	
+	
+	def logvirtenv(f,v):	#file, array ambienti virtuali
+		for x in range(len(v)):
+			v[x].logfileenvvirt(f,x)
+			f.write('^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
+		f.write('numero ambienti virtuali=' + len(v))	
+	
+	
+	def utfunctvirt(self,ns,g,ep,d):			#numsteps, graph, epsilon, deep(2 in meno dell numero di nodi)
+		v=self.mkvirtenv(g,d)
+		vc=v.copy()
+		budget=0
+		matsim=[[],[]]							#matrice simulazione [nodi che visita, tempo in budget]
+		self.resetcounts(g)
+		self.updatevcount(self.actualpos,1)
+		self.setavgidln(self.actualpos,1)
+		avgg=self.avgidlg(g,1)
+		#print("avgg=",avgg)
+		matsim[0].append(self.actualpos)
+		matsim[1].append(budget)
+		x=1
+		vr=randint(0,len(v)-1)
+		age=0
+		while x < ns:
+			if (round(random(),1)*age) < randint(1,100):				#drop event
+				age=age+1
+			else:
+				v.pop(vr)
+				if len(v) <= 0:
+					v=vc.copy()
+				vr=randint(0,len(v)-1)
+				age=0
+			r=randint(1,100)
+			if r > ep:
+				next=self.nextrandomv(self.actualpos,v[vr])
+			else:
+				next=self.nextstepidlimp(x+1,v[vr].getnode(self.actualpos),v[vr])
+							#random choise
+			distedg=g.getedge(g.getnode(self.actualpos),next).w
+			self.actualpos=next
+			self.setavgidln(g.getnode(self.actualpos),x+1)
+			avgg=self.avgidlg(g,x+1)
+			#print("avgg=",avgg)
+			self.updatevcount(g.getnode(self.actualpos),x+1)
+			#print(self.actualpos.pos)
+			budget=budget+distedg
+			matsim[0].append(g.getnode(self.actualpos))						
+			matsim[1].append(budget)
+			x=x+1
+		return matsim,vc
+
+nod=25	
+env=Environment(nod, ed=1)
+n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
+ob=env.g.nodes[randint(0,len(env.g.nodes)-1)]
+env.g.printgfile()
+r=Robot(n)
+o=Observer(ob)
+sim,v=r.utfunctvirt(10000,env.g,90,nod-2)
+env.g.printg()
+env.g.printedges()
+name= 'log/virt/testv'
+os.makedirs(os.path.dirname(name), exist_ok=True)
+f=open(name,"w")
+env.logfileenv(f,env.g,10000,nod,1,1,sim)
+env.logfileenvvirt(f,v)
+#env.g.printgfile()
+k=3
+o.obspossatkvark(k,sim)
+o.erratklist=[]									#lista errore previsioni attacco
+for i in range(len(o.atklist)):
+	if (o.atklist[i] == 1) and (o.obspos.tatk >= o.listidln[i+k+1]):
+		o.erratklist.append(1)
+	else: 
+		o.erratklist.append(0)								  
+	if (o.atklist[i] == 0) and (o.obspos.tatk < o.listidln[i+k+1]):
+		o.errnotatklist.append(1)
+	else:
+		o.errnotatklist.append(0)
+o.logfileobs(f)
+o.logfileprev(f,k)
+
+plt.figure('Observer atk', figsize=(15,10))
+plt.subplot(311)
+plt.plot(o.atklist)
+plt.xlabel('t')
+plt.ylabel('Obs atk')
+plt.title('Observer possible attack')
+plt.subplot(312)
+plt.plot(o.erratklist)
+plt.title('Observer error prediction attack (1=error)')
+plt.ylabel('Error atk')
+plt.xlabel('t')
+plt.subplot(313)
+plt.plot(o.errnotatklist)
+plt.title('Observer error prediction not attack (1=error)')
+plt.ylabel('Error not atk')
+plt.xlabel('t')
+nameatk='log/virt/grafv'
+os.makedirs(os.path.dirname(nameatk), exist_ok=True)
+plt.savefig(nameatk)
+#plt.show()
+plt.close()
+f.close()
 		
 	
-				
-				
-				
-		
-		
+
+env2=Environment(file=1)
+r2=Robot(n)
+o2=Observer(ob)
+sim=r2.utidlimpep(10000,env2.g,90)
+env2.g.printg()
+env2.g.printedges()
+name= 'log/virt/test'
+os.makedirs(os.path.dirname(name), exist_ok=True)
+f=open(name,"w")
+env2.logfileenv(f,env2.g,10000,nod,1,1,sim)
+#env.g.printgfile()
+k=3
+o2.obspossatkvark(k,sim)
+o2.erratklist=[]									#lista errore previsioni attacco
+for i in range(len(o2.atklist)):
+	if (o2.atklist[i] == 1) and (o2.obspos.tatk >= o2.listidln[i+k+1]):
+		o2.erratklist.append(1)
+	else: 
+		o2.erratklist.append(0)								  
+	if (o2.atklist[i] == 0) and (o2.obspos.tatk < o2.listidln[i+k+1]):
+		o2.errnotatklist.append(1)
+	else:
+		o2.errnotatklist.append(0)
+o2.logfileobs(f)
+o2.logfileprev(f,k)
+
+plt.figure('Observer atk', figsize=(15,10))
+plt.subplot(311)
+plt.plot(o2.atklist)
+plt.xlabel('t')
+plt.ylabel('Obs atk')
+plt.title('Observer possible attack')
+plt.subplot(312)
+plt.plot(o2.erratklist)
+plt.title('Observer error prediction attack (1=error)')
+plt.ylabel('Error atk')
+plt.xlabel('t')
+plt.subplot(313)
+plt.plot(o2.errnotatklist)
+plt.title('Observer error prediction not attack (1=error)')
+plt.ylabel('Error not atk')
+plt.xlabel('t')
+nameatk='log/virt/graf'
+os.makedirs(os.path.dirname(nameatk), exist_ok=True)
+plt.savefig(nameatk)
+#plt.show()
+plt.close()		
+f.close()
+
+
 
 #env=Environment(file=1)
 '''			#emd graphics
@@ -892,11 +1137,12 @@ plt.ylabel('comp values')
 plt.title('histograms comparison')
 plt.show()
 '''
-'''
+
  #NN k fisso, epsilon random e tatk
 
 sim=None
 steps=[10000]
+'''
 for s in range(len(steps)):
 	names= 'log/' + str(steps[s]) + 'steps/'
 	for nnod in range(5):#10 -> fino a 100nodi
@@ -1094,7 +1340,206 @@ for s in range(len(steps)):
 				env.destroye()
 				del env.g
 				del env
-'''
+				'''
+'''ultimi test
+for s in range(len(steps)):
+	names= 'log/' + str(steps[s]) + 'steps/'
+	nnod=2 #10 -> fino a 100nodi
+	namen=names + str((nnod+1)*10) + 'nodi/'
+	for nedg in range(11):#11 -> da 0 a 100% archi
+		namee= namen + str(nedg*10) + 'densità archi/'	
+		for x in range(10):
+			namet = namee + 'Test' + str(x) +'/'
+			env=Environment((nnod+1)*10,g=Graph(), ed=nedg*0.1)
+			start=env.g.nodes[randint(0,len(env.g.nodes)-1)]
+			env.g.printg()	
+			env.g.printedges()
+			print('Mode: utep')
+			ncomp=namet + 'log' + str(x) + '.txt'
+			os.makedirs(os.path.dirname(ncomp), exist_ok=True)
+			f=open(ncomp,"w")
+			env.logfileenv(f,env.g,steps[s],(nnod+1)*10,nedg*0.1,x,sim)
+			obsnode=env.g.nodes[randint(0,len(env.g.nodes)-1)]		
+			epsilon=0
+			listk=[]				#lista k media su massimo 10 punti
+			listp=[]				#lista prima predizione su k
+			listcompk=[]			#lista predizione media completa
+			k=3
+			r=Robot(start)
+			ep=100-(epsilon*10)
+			sim=r.utidlimpep(steps[s],env.g,ep)
+			#y3,y4=r.stats(10000,env.g)
+			r.visprint(env.g)
+			r.simprint(sim)
+			r.logfilerob(f,env.g,steps[s],(nnod+1)*10,nedg*0.1,x,sim,(epsilon*0.1))
+			o=Observer(obsnode)
+					
+			nameep=namet + 'epsilon' +str(epsilon*10) + '/'
+			os.makedirs(os.path.dirname(nameep), exist_ok=True)
+					
+					
+			while k < 11:#11
+				o.obspossatk(k,sim)
+				o.erratklist=[]									#lista errore previsioni attacco
+				for i in range(len(o.atklist)):
+					if (o.atklist[i] == 1) and (o.obspos.tatk >= o.listidln[i+k+1]):
+						o.erratklist.append(1)
+					else: 
+						o.erratklist.append(0)								  
+					if (o.atklist[i] == 0) and (o.obspos.tatk < o.listidln[i+k+1]):
+						o.errnotatklist.append(1)
+					else:
+						o.errnotatklist.append(0)
+						
+				if k==3:
+					o.logfileobs(f)
+				o.logfileprev(f,k)
+				print('num el oss=',len(o.listidln),'osservatore: (nodo:',o.obspos.pos,') ', o.listidln)	
+						
+						
+				lisv=r.getvis(env.g)
+				lnn=r.listnamepos(env.g.nodes)
+				ls=range(len(lnn))
+				plt.figure('Visits',figsize=(20,4))
+				plt.bar(ls,lisv,color='g')
+				plt.xticks(ls,lnn,rotation='vertical')
+				for i in range(len(ls)):
+					if lnn[i][0]=='C':
+						plt.bar(i,lisv[i],color='r',align='center')
+				plt.title('Robot visits')
+				plt.savefig(namet + 'visits ep' + str(epsilon*10))
+				plt.close()
+						
+				plt.figure('Observer', figsize=(30,7))
+				plt.subplot(121)
+				plt.plot(o.listidln)
+				plt.xlabel('t')
+				plt.ylabel('idleness')
+				plt.title('Idleness observed')
+				plt.subplot(122)
+				plt.plot(o.errlist)
+				plt.title('Observer error prediction')
+				plt.ylabel('Square error')
+				plt.xlabel('t')
+				plt.savefig(nameep + 'k' + str(k) + 'epsilon' + str(epsilon*10))
+				#plt.show()
+				plt.close()
+						
+						
+				plt.figure('Observer atk', figsize=(15,10))
+				plt.subplot(311)
+				plt.plot(o.atklist)
+				plt.xlabel('t')
+				plt.ylabel('Obs atk')
+				plt.title('Observer possible attack')
+				plt.subplot(312)
+				plt.plot(o.erratklist)
+				plt.title('Observer error prediction attack (1=error)')
+				plt.ylabel('Error atk')
+				plt.xlabel('t')
+				plt.subplot(313)
+				plt.plot(o.errnotatklist)
+				plt.title('Observer error prediction not attack (1=error)')
+				plt.ylabel('Error not atk')
+				plt.xlabel('t')
+				nameatk=nameep +'atk/'
+				os.makedirs(os.path.dirname(nameatk), exist_ok=True)
+				plt.savefig(nameatk + 'k' + str(k) + 'epsilon' + str(epsilon*10))
+				#plt.show()
+				plt.close()
+						
+				se=0
+				sc=0
+				aus=[]
+				for y in range(len(o.errlist)):
+					sc=sc+o.errlist[y]
+				if len(o.errlist) > 0: 
+					z=0
+					aus.append(o.errlist[z])
+					if len(o.errlist) > 10:
+						z=z+(len(o.errlist)/10)
+						while int(z) < len(o.errlist):
+							aus.append(o.errlist[int(z)])
+							z=z+z
+					else:
+						z=z+1
+						while z < len(o.errlist):
+							aus.append(o.errlist[z])
+							z=z+z			
+				else:
+					z=0
+					while z < len(o.errlist):
+						aus.append(o.errlist[z])
+						z=z+z
+				if len(aus) > 0:		
+					for y in range(len(aus)):
+						se=se+aus[y]
+					#print('gradnezza aus:', len(aus))
+					listk.append(se/len(aus))
+				if len(o.errlist) > 0:
+					listcompk.append(sc/len(o.errlist))
+				else:
+					listcompk.append(-1)
+				listp.append(o.numpredex())
+						
+				k=k+1
+				
+				
+				
+			lisx=[]
+			for x in range(len(listk)):
+				lisx.append(x+3)	
+			plt.figure('prediction period (max 10 points)', figsize=(30,7))
+			plt.subplot(121)
+			plt.plot(lisx,listk)
+			plt.xlabel('k')
+			plt.ylabel('MSE')
+			plt.title('Grafico errore medio k su massimo 10 punti osservati con epsilon' +str(epsilon*10))
+			lisx=[]
+			for x in range(k-3):
+				lisx.append(x+3)				
+			plt.subplot(122)
+			plt.plot(lisx,listp)
+			plt.xlabel('k')
+			plt.ylabel('Period')
+			plt.title('Prediction')
+			namg=nameep + 'Grafico errore medio su 10 punti e periodo predizione '+ str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi con epsilon' +str(epsilon*10)
+			plt.savefig(namg)
+			plt.close()
+					
+					
+					
+					
+			lisx=[]
+			for x in range(len(listcompk)):
+				lisx.append(x+3)	
+			plt.figure('complete prediction period', figsize=(30,7))
+			plt.subplot(121)
+			plt.plot(lisx,listcompk)
+			plt.xlabel('k')
+			plt.ylabel('MSE')
+			plt.title('Grafico errore medio k su tutti i punti osservati con epsilon' + str(epsilon*10))
+			lisx=[]
+			for x in range(k-3):
+				lisx.append(x+3)				
+			plt.subplot(122)
+			plt.plot(lisx,listp)
+			plt.xlabel('k')
+			plt.ylabel('Period')
+			plt.title('Prediction')
+			namg=nameep + 'Grafico errore medio e periodo predizione '+ str((nnod+1)*10) + 'nodi' + str(nedg*10) + 'archi con epsilon' + str(epsilon*10)
+			plt.savefig(namg)
+			plt.close()
+					
+					
+			del r
+			del o
+		f.close()
+		env.destroye()
+		del env.g
+		del env
+'''			
+			
 				
 '''	test k variabile		
 env=Environment(10,g=Graph(), ed=0)
@@ -1127,7 +1572,7 @@ plt.xlabel('t')
 plt.show()
 plt.close()
 '''
-
+'''
  #NN k varaibile, epsilon random e tatk
 
 sim=None
@@ -1246,7 +1691,7 @@ for s in range(len(steps)):
 
 
 
-
+'''
 
 
 
