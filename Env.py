@@ -65,13 +65,25 @@ class Graph:
 			if n.pos==self.nodes[i].pos :
 				return self.nodes[i]
 		return None
-	
+
+	def getnodeint(self,n):
+		for i in range(len(self.nodes)):
+			if n==int(self.nodes[i].pos):
+				return self.nodes[i]
+		return None
+
 	def getedge(self,n1,n2):
 		for x in range(len(self.edges)):
 				if ((self.edges[x].n1.pos == n1.pos) and (self.edges[x].n2.pos == n2.pos))or((self.edges[x].n1.pos == n2.pos) and (self.edges[x].n2.pos == n1.pos)):
 					return self.edges[x]
 		return None
-	
+	def getlistedge(self,n):
+		l=[]
+		for x in range(len(self.edges)):
+			if (self.edges[x].n1.pos == n.pos) or (self.edges[x].n2.pos == n.pos):
+				l.append(self.edges[x])
+		return l	
+
 	
 	def getweightedge(self,n1,n2):
 		e=self.getedge(n1,n2)
