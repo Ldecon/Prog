@@ -147,7 +147,7 @@ class Observer:
 																			#
 			if matsim[0][x]==self.obspos:
 				self.listidln.append(obscountidl)
-				if len(o.listidln) > k and flag==1:
+				if len(self.listidln) > k and flag==1:
 					self.errlist.append((obscountidl-prediction)**2)		#calcolo errore predizione
 					self.predictionlist.append(prediction)
 					if self.obspos.tatk < prediction:						#se tempo attacco < predizione allora possibile attacco(1)
@@ -224,7 +224,7 @@ class Observer:
 																			#
 			if matsim[0][x]==self.obspos:
 				self.listidln.append(obscountidl)
-				if len(o.listidln) > k and flag==1:
+				if len(self.listidln) > k and flag==1:
 					self.errlist.append((obscountidl-prediction)**2)		#calcolo errore predizione
 					self.predictionlist.append(prediction)
 					if self.obspos.tatk < prediction:						#se tempo attacco < predizione allora possibile attacco(1)
@@ -851,74 +851,87 @@ class Robot:
 		return 0
 
 
-	def spantree(self, n, gr, g, v, f, deep):             #nodo, grafovirtuale, grafoambiente, listagrafivirt, flag, profondità
+	def spantree(self, gr, g, n, matfreq, d):		#nuovo ambiente, ambiente, ultimo nodo, matrice di frequenze, profondità					
 		if gr.numnodes == g.numnodes:
-			return 
+			return
 		else:
-			if deep > 0:
-				
-				if len(n.adj) > 0:
-					for x in range(len(n.adj)):
-						if gr.getnode(n.adj[x]) == None:
-							gr.addvirtnode(Node(pos=n.adj[x].pos,imp=n.adj[x].imp,cx=n.adj[x].cx,cy=n.adj[x].cy,tatk=n.adj[x].tatk))
-							gr.addedge(n,n.adj[x])
-							deep=deep-1
-							n.vf=1
-							self.spantree(n.adj[x],gr,g,v,f,deep)
-			else:		
-				if n.vf:
-					if len(n.adj) >0:
-						x=0
-						while x < len(n.adj):
-							if gr.getnode(n.adj[x]) == None and not n.adj[x].vf :
-								break
-							x=x+1
-						if x < len(n.adj):
-							gr.addvirtnode(Node(pos=n.adj[x].pos,imp=n.adj[x].imp,cx=n.adj[x].cx,cy=n.adj[x].cy,tatk=n.adj[x].tatk))
-							gr.addedge(n,n.adj[x])
-							while x < len(n.adj):
-								self.spantree(n.adj[x],gr,g,v,f,deep)
-								x=x+1
-						else:
-							while x < len(n.adj):
-								if gr.getnode(n.adj[x]) == None:
-									break
-								x=x+1
-							if x < len(n.adj):
-								gr.addvirtnode(Node(pos=n.adj[x].pos,imp=n.adj[x].imp,cx=n.adj[x].cx,cy=n.adj[x].cy,tatk=n.adj[x].tatk))
-								gr.addedge(n,n.adj[x])
-								while x < len(n.adj):
-									self.spantree(n.adj[x],gr,g,v,f,deep)
-									x=x+1	
+			l=[]
+			for x in range(len(g.getnode(n).adj)):
+				if gr.getnode(g.getnode(n).adj[x])==None:
+					l.append(g.getnode(n).adj[x])
+			if not len(l):
+				e=gr.getlistedge(n)
+				if e[0].n1.pos == n.pos :
+					n=e[0].n1
 				else:
-					if len(n.adj) >0:
-						for x in range(len(n.adj)):
-							if gr.getnode(n.adj[x]) == None:
-								gr.addvirtnode(Node(pos=n.adj[x].pos,imp=n.adj[x].imp,cx=n.adj[x].cx,cy=n.adj[x].cy,tatk=n.adj[x].tatk))
-								gr.addedge(n,n.adj[x])
-						if not f: 
-							f=1
-							n.vf=1
-						for x in range(len(n.adj)):
-							self.spantree(n.adj[x],gr,g,v,f,deep)
+					n=e[0].n2
+				self.spantree(gr,g,n, matfreq, d-1)
+			else:
+				lis=[]
+				lad=[]		#lista frequenze nodi adiacenti
+				m=0
+				for y in range(len(l)):
+					lad.append(matfreq[d][(int(l[y].pos)-1)])
+				for y in range(len(lad)):
+					m=lad[y]+m
+				if not m:
+					m=1 
+				for y in range(len(lad)):
+					lis.append(1-(lad[y]/m))
+				m=0
+				for y in range(len(lis)):
+					m=lis[y]+m
+				if not m:
+					m=1
+				for y in range(len(lis)):
+					if y > 0:
+						lis[y]=(lis[y]/m)+lis[y-1]
+					else:
+						lis[y]=lis[y]/m
+				r=random()
+				for y in range(len(lis)):
+					m=y
+					if r <= lis[y]:
+						matfreq[d][(int(l[y].pos)-1)]=matfreq[d][(int(l[y].pos)-1)]+1
+						break
+				nn=g.getnode(l[y])
+				gr.addvirtnode(Node(pos=nn.pos,imp=nn.imp,cx=nn.cx,cy=nn.cy,tatk=nn.tatk))
+				gr.addedge(n,gr.nodes[len(gr.nodes)-1])
+				n=gr.nodes[len(gr.nodes)-1]
+				self.spantree(gr,g,n,matfreq,d+1)
+		
+		
+	def mkvirtenv(self,g,v,matfreq):
+		v.append(Graph())
+		l=[]
+		m=0
+		for x in range(len(matfreq[0])):
+			m=matfreq[0][x]+m
+		if not m:
+			m=1 
+		for x in range(len(matfreq[0])):
+			l.append(1-(matfreq[0][x]/m))
+		m=0
+		for x in range(len(l)):
+			m=l[x]+m
+		for x in range(len(l)):
+			if x >0:
+				l[x]=(l[x]/m)+l[x-1]
+			else:
+				l[x]=l[x]/m
+		r=random()		
+		for x in range(len(l)):
+			m=x
+			if r <= l[x]:
+				matfreq[0][x]=matfreq[0][x]+1
+				break
+		n=g.getnodeint(x+1)
+		v[len(v)-1].addvirtnode(Node(pos=n.pos,imp=n.imp,cx=n.cx,cy=n.cy,tatk=n.tatk))
+		self.spantree(v[len(v)-1],g,v[len(v)-1].nodes[0],matfreq,1)
+		if self.existspantree(v,v[len(v)-1]):
+			v.pop(len(v)-1)
 							
-	def mkvirtenv(self, g,d):
-		v=[]
-		for i in range(d):	
-			for z in range(len(g.nodes)):
-				while not g.allvfg():
 
-					v.append(Graph())
-					x=len(v)-1
-					v[x].addvirtnode(Node(pos=g.nodes[z].pos,imp=g.nodes[z].imp,cx=g.nodes[z].cx,cy=g.nodes[z].cy,tatk=g.nodes[z].tatk))
-					self.spantree(g.nodes[z],v[x],g,v,0,i)
-					for y in range(len(v)):
-						if self.existspantree(v,v[x]):
-							v.pop(x)
-							break	
-				g.resetvfg()	
-			print(i)	
-		return v	
 	
 	def logvirtenv(f,v):	#file, array ambienti virtuali
 		for x in range(len(v)):
@@ -926,10 +939,37 @@ class Robot:
 			f.write('^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
 		f.write('numero ambienti virtuali=' + len(v))	
 	
+	def linage(self, age):			#p lineare
+		t=100					#max age T=100
+		p=0 						
+		if age > t:
+			p=1
+		else:
+			p=age/t
+		return p 
 	
-	def utfunctvirt(self,ns,g,ep,d):			#numsteps, graph, epsilon, deep(2 in meno dell numero di nodi)
-		v=self.mkvirtenv(g,d)
-		vc=v.copy()
+	def expage(self,age):			#p esponenziale
+		t=100				#max age T
+		p=0
+		if age > t:
+			p=1
+		else:
+			p=(math.exp(age/21.71))/t
+		return p
+	
+	def logage(self,age):			#p logaritmica
+		t=100				#max age T
+		p=0
+		if age > t:
+			p=1
+		else:
+			p=(math.log((age*1.5)+1))/6
+		return p
+	
+	def utfunctvirt(self,ns,g,ep):			#numsteps, graph, epsilon)
+		v=[]
+		matfreq=[[0 for x in range(len(g.nodes))]for x in range(len(g.nodes))]
+		self.mkvirtenv(g,v,matfreq)
 		budget=0
 		matsim=[[],[]]							#matrice simulazione [nodi che visita, tempo in budget]
 		self.resetcounts(g)
@@ -940,23 +980,21 @@ class Robot:
 		matsim[0].append(self.actualpos)
 		matsim[1].append(budget)
 		x=1
-		vr=randint(0,len(v)-1)
 		age=0
 		while x < ns:
-			if (round(random(),1)*age) < randint(1,100):				#drop event
-				age=age+1
-			else:
-				v.pop(vr)
-				if len(v) <= 0:
-					v=vc.copy()
-				vr=randint(0,len(v)-1)
-				age=0
 			r=randint(1,100)
 			if r > ep:
-				next=self.nextrandomv(self.actualpos,v[vr])
+				next=self.nextrandomv(self.actualpos,v[len(v)-1])
+				age=age+1
 			else:
-				next=self.nextstepidlimp(x+1,v[vr].getnode(self.actualpos),v[vr])
-							#random choise
+				next=self.nextstepidlimp(x+1,v[len(v)-1].getnode(self.actualpos),v[len(v)-1])
+			pr=random()
+			if pr > self.linage(age):				#drop event function
+				age=age+1
+			else:
+				self.mkvirtenv(g,v,matfreq)
+				age=0
+							
 			distedg=g.getedge(g.getnode(self.actualpos),next).w
 			self.actualpos=next
 			self.setavgidln(g.getnode(self.actualpos),x+1)
@@ -968,8 +1006,64 @@ class Robot:
 			matsim[0].append(g.getnode(self.actualpos))						
 			matsim[1].append(budget)
 			x=x+1
-		return matsim,vc
+		return matsim,v
 
+
+nod=10
+env=Environment(nod, ed=1)
+n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
+ob=env.g.nodes[randint(0,len(env.g.nodes)-1)]
+#env.g.printgfile()
+r=Robot(n)
+o=Observer(ob)
+v=[]
+sim,v=r.utfunctvirt(10000,env.g,90)
+env.g.printg()
+env.g.printedges()
+name= 'log/virt/testv'
+os.makedirs(os.path.dirname(name), exist_ok=True)
+f=open(name,"w")
+env.logfileenv(f,env.g,10000,nod,1,1,sim)
+env.logfileenvvirt(f,v)
+k=3
+o.obspossatkvark(k,sim)
+o.erratklist=[]									#lista errore previsioni attacco
+for i in range(len(o.atklist)):
+	if (o.atklist[i] == 1) and (o.obspos.tatk >= o.listidln[i+k+1]):
+		o.erratklist.append(1)
+	else: 
+		o.erratklist.append(0)								  
+	if (o.atklist[i] == 0) and (o.obspos.tatk < o.listidln[i+k+1]):
+		o.errnotatklist.append(1)
+	else:
+		o.errnotatklist.append(0)
+o.logfileobs(f)
+o.logfileprev(f,k)
+
+plt.figure('Observer atk', figsize=(15,10))
+plt.subplot(311)
+plt.plot(o.atklist)
+plt.xlabel('t')
+plt.ylabel('Obs atk')
+plt.title('Observer possible attack')
+plt.subplot(312)
+plt.plot(o.erratklist)
+plt.title('Observer error prediction attack (1=error)')
+plt.ylabel('Error atk')
+plt.xlabel('t')
+plt.subplot(313)
+plt.plot(o.errnotatklist)
+plt.title('Observer error prediction not attack (1=error)')
+plt.ylabel('Error not atk')
+plt.xlabel('t')
+nameatk='log/virt/grafv'
+os.makedirs(os.path.dirname(nameatk), exist_ok=True)
+plt.savefig(nameatk)
+#plt.show()
+plt.close()
+f.close()
+
+'''
 nod=25	
 env=Environment(nod, ed=1)
 n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
@@ -1023,10 +1117,12 @@ plt.savefig(nameatk)
 #plt.show()
 plt.close()
 f.close()
-		
-	
-
+'''		
+'''
+nod=10
 env2=Environment(file=1)
+n=env2.g.nodes[3]
+ob=env2.g.nodes[4]
 r2=Robot(n)
 o2=Observer(ob)
 sim=r2.utidlimpep(10000,env2.g,90)
@@ -1074,7 +1170,7 @@ plt.savefig(nameatk)
 #plt.show()
 plt.close()		
 f.close()
-
+'''
 
 
 #env=Environment(file=1)
