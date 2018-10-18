@@ -14,8 +14,7 @@ class Node:
 		self.valueimp=0				#valore importanza
 		self.nidlavg=0				#media adleness
 		self.tatk=tatk					#tempo attacco nodo
-		self.vf=0					#flag per ambiente virtuale
-		self.vu=0					#flag di uso per combinazioni ambienti virtuali
+		self.deep=0					#deep
 		
 
 	def addadj(self,n):
@@ -83,6 +82,11 @@ class Graph:
 			if (self.edges[x].n1.pos == n.pos) or (self.edges[x].n2.pos == n.pos):
 				l.append(self.edges[x])
 		return l	
+	
+	def resetdeepn(self):
+		for x in range(len(self.nodes)):
+			self.nodes[x].deep=0
+		return
 
 	
 	def getweightedge(self,n1,n2):
