@@ -871,37 +871,48 @@ class Robot:
 				lad=[]		#lista frequenze nodi adiacenti
 				m=0
 				for y in range(len(l)):
-					lad.append(matfreq[d][(int(l[y].pos)-1)])
+					lad.append(matfreq[d][(int(l[y].pos)-1)])		#freq
 				for y in range(len(lad)):
-					m=lad[y]+m
+					m=lad[y]+m								#freq max
 				if not m:
 					m=1 
 				for y in range(len(lad)):
-					lis.append(1-(lad[y]/m))
+					lis.append(1-(lad[y]/m))				#fi i
 				m=0
 				for y in range(len(lis)):
-					m=lis[y]+m
+					m=lis[y]+m								#fi max
 				if not m:
 					m=1
 				for y in range(len(lis)):
 					if y > 0:
-						lis[y]=(lis[y]/m)+lis[y-1]
+						lis[y]=(lis[y]/m)+lis[y-1]			#ro i
 					else:
-						lis[y]=lis[y]/m
+						if y==len(lis):
+							lis[y]=1
+						else:
+							lis[y]=lis[y]/m						
 				r=random()
+				while not r:
+					r=random()
 				for y in range(len(lis)):
 					m=y
 					if r <= lis[y]:
-						matfreq[d][(int(l[y].pos)-1)]=matfreq[d][(int(l[y].pos)-1)]+1
+						
 						break
+
 				nn=g.getnode(l[y])
 				gr.addvirtnode(Node(pos=nn.pos,imp=nn.imp,cx=nn.cx,cy=nn.cy,tatk=nn.tatk))
 				gr.addedge(n,gr.nodes[len(gr.nodes)-1])
-				n=gr.nodes[len(gr.nodes)-1]
-				self.spantree(gr,g,n,matfreq,d+1)
+				gr.nodes[len(gr.nodes)-1].deep=n.deep+1
+				matfreq[gr.nodes[len(gr.nodes)-1].deep][(int(l[y].pos)-1)]=matfreq[gr.nodes[len(gr.nodes)-1].deep][(int(l[y].pos)-1)]+1
+				if random() > 0.5:							#scelta se scendere in profondità o restare sullo stesso livello
+					n=gr.getnode(n).adj[randint(0,len(gr.getnode(n).adj)-1)]
+					d=n.deep
+				self.spantree(gr,g,n,matfreq,d)
 		
 		
 	def mkvirtenv(self,g,v,matfreq):
+		g.resetdeepn()
 		v.append(Graph())
 		l=[]
 		m=0
@@ -966,7 +977,7 @@ class Robot:
 			p=(math.log((age*1.5)+1))/6
 		return p
 	
-	def utfunctvirt(self,ns,g,ep):			#numsteps, graph, epsilon)
+	def utfunctvirt(self,ns,g,ep,funct):			#numsteps, graph, epsilon)
 		v=[]
 		matfreq=[[0 for x in range(len(g.nodes))]for x in range(len(g.nodes))]
 		self.mkvirtenv(g,v,matfreq)
@@ -989,12 +1000,26 @@ class Robot:
 			else:
 				next=self.nextstepidlimp(x+1,v[len(v)-1].getnode(self.actualpos),v[len(v)-1])
 			pr=random()
-			if pr > self.linage(age):				#drop event function
-				age=age+1
+			if funct == 'lin':
+				if pr > self.linage(age):				#drop event lin function
+					age=age+1
+				else:
+					self.mkvirtenv(g,v,matfreq)
+					age=0
 			else:
-				self.mkvirtenv(g,v,matfreq)
-				age=0
-							
+				if funct == 'exp':
+					if pr > self.expage(age):				#drop event exp function
+						age=age+1
+					else:
+						self.mkvirtenv(g,v,matfreq)
+						age=0
+				else:
+					if pr > self.logage(age):				#drop event log function
+						age=age+1
+					else:
+						self.mkvirtenv(g,v,matfreq)
+						age=0
+								
 			distedg=g.getedge(g.getnode(self.actualpos),next).w
 			self.actualpos=next
 			self.setavgidln(g.getnode(self.actualpos),x+1)
@@ -1017,7 +1042,7 @@ ob=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 r=Robot(n)
 o=Observer(ob)
 v=[]
-sim,v=r.utfunctvirt(10000,env.g,90)
+sim,v=r.utfunctvirt(10000,env.g,90,'lin') 				# funct='lin'/'exp'/'log'
 env.g.printg()
 env.g.printedges()
 name= 'log/virt/testv'
@@ -1039,7 +1064,6 @@ for i in range(len(o.atklist)):
 		o.errnotatklist.append(0)
 o.logfileobs(f)
 o.logfileprev(f,k)
-
 plt.figure('Observer atk', figsize=(15,10))
 plt.subplot(311)
 plt.plot(o.atklist)
