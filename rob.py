@@ -1034,7 +1034,7 @@ class Robot:
 		return matsim,v
 
 
-nod=10
+nod=20
 env=Environment(nod, ed=1)
 n=env.g.nodes[randint(0,len(env.g.nodes)-1)]
 ob=env.g.nodes[randint(0,len(env.g.nodes)-1)]
@@ -1045,10 +1045,11 @@ v=[]
 sim,v=r.utfunctvirt(10000,env.g,90,'lin') 				# funct='lin'/'exp'/'log'
 env.g.printg()
 env.g.printedges()
-name= 'log/virt/testv'
+name= 'log/virt/testvlin'
 os.makedirs(os.path.dirname(name), exist_ok=True)
 f=open(name,"w")
 env.logfileenv(f,env.g,10000,nod,1,1,sim)
+r.logfilerob(f,env.g,10000,nod,1,1,sim,10)
 env.logfileenvvirt(f,v)
 k=3
 o.obspossatkvark(k,sim)
@@ -1080,13 +1081,164 @@ plt.plot(o.errnotatklist)
 plt.title('Observer error prediction not attack (1=error)')
 plt.ylabel('Error not atk')
 plt.xlabel('t')
-nameatk='log/virt/grafv'
+nameatk='log/virt/grafvlin'
 os.makedirs(os.path.dirname(nameatk), exist_ok=True)
 plt.savefig(nameatk)
 #plt.show()
 plt.close()
 f.close()
+print('lin')
 
+o.resetobslists()
+r=Robot(n)
+o=Observer(ob)
+v=[]
+sim,v=r.utfunctvirt(10000,env.g,90,'exp') 				# funct='lin'/'exp'/'log'
+env.g.printg()
+env.g.printedges()
+name= 'log/virt/testvexp'
+os.makedirs(os.path.dirname(name), exist_ok=True)
+f=open(name,"w")
+env.logfileenv(f,env.g,10000,nod,1,1,sim)
+r.logfilerob(f,env.g,10000,nod,1,1,sim,10)
+env.logfileenvvirt(f,v)
+k=3
+o.obspossatkvark(k,sim)
+o.erratklist=[]									#lista errore previsioni attacco
+for i in range(len(o.atklist)):
+	if (o.atklist[i] == 1) and (o.obspos.tatk >= o.listidln[i+k+1]):
+		o.erratklist.append(1)
+	else: 
+		o.erratklist.append(0)								  
+	if (o.atklist[i] == 0) and (o.obspos.tatk < o.listidln[i+k+1]):
+		o.errnotatklist.append(1)
+	else:
+		o.errnotatklist.append(0)
+o.logfileobs(f)
+o.logfileprev(f,k)
+plt.figure('Observer atk', figsize=(15,10))
+plt.subplot(311)
+plt.plot(o.atklist)
+plt.xlabel('t')
+plt.ylabel('Obs atk')
+plt.title('Observer possible attack')
+plt.subplot(312)
+plt.plot(o.erratklist)
+plt.title('Observer error prediction attack (1=error)')
+plt.ylabel('Error atk')
+plt.xlabel('t')
+plt.subplot(313)
+plt.plot(o.errnotatklist)
+plt.title('Observer error prediction not attack (1=error)')
+plt.ylabel('Error not atk')
+plt.xlabel('t')
+nameatk='log/virt/grafvexp'
+os.makedirs(os.path.dirname(nameatk), exist_ok=True)
+plt.savefig(nameatk)
+#plt.show()
+plt.close()
+f.close()
+print('exp')
+
+o.resetobslists()
+r=Robot(n)
+o=Observer(ob)
+v=[]
+sim,v=r.utfunctvirt(10000,env.g,90,'log') 				# funct='lin'/'exp'/'log'
+env.g.printg()
+env.g.printedges()
+name= 'log/virt/testvlog'
+os.makedirs(os.path.dirname(name), exist_ok=True)
+f=open(name,"w")
+env.logfileenv(f,env.g,10000,nod,1,1,sim)
+r.logfilerob(f,env.g,10000,nod,1,1,sim,10)
+env.logfileenvvirt(f,v)
+k=3
+o.obspossatkvark(k,sim)
+o.erratklist=[]									#lista errore previsioni attacco
+for i in range(len(o.atklist)):
+	if (o.atklist[i] == 1) and (o.obspos.tatk >= o.listidln[i+k+1]):
+		o.erratklist.append(1)
+	else: 
+		o.erratklist.append(0)								  
+	if (o.atklist[i] == 0) and (o.obspos.tatk < o.listidln[i+k+1]):
+		o.errnotatklist.append(1)
+	else:
+		o.errnotatklist.append(0)
+o.logfileobs(f)
+o.logfileprev(f,k)
+plt.figure('Observer atk', figsize=(15,10))
+plt.subplot(311)
+plt.plot(o.atklist)
+plt.xlabel('t')
+plt.ylabel('Obs atk')
+plt.title('Observer possible attack')
+plt.subplot(312)
+plt.plot(o.erratklist)
+plt.title('Observer error prediction attack (1=error)')
+plt.ylabel('Error atk')
+plt.xlabel('t')
+plt.subplot(313)
+plt.plot(o.errnotatklist)
+plt.title('Observer error prediction not attack (1=error)')
+plt.ylabel('Error not atk')
+plt.xlabel('t')
+nameatk='log/virt/grafvlog'
+os.makedirs(os.path.dirname(nameatk), exist_ok=True)
+plt.savefig(nameatk)
+#plt.show()
+plt.close()
+f.close()
+print('log')
+
+o.resetobslists()
+r=Robot(n)
+o=Observer(ob)
+sim=r.utidlimpep(10000,env.g,90)
+env.g.printg()
+env.g.printedges()
+name= 'log/virt/test'
+os.makedirs(os.path.dirname(name), exist_ok=True)
+f=open(name,"w")
+env.logfileenv(f,env.g,10000,nod,1,1,sim)
+r.logfilerob(f,env.g,10000,nod,1,1,sim,10)
+k=3
+o.obspossatkvark(k,sim)
+o.erratklist=[]									#lista errore previsioni attacco
+for i in range(len(o.atklist)):
+	if (o.atklist[i] == 1) and (o.obspos.tatk >= o.listidln[i+k+1]):
+		o.erratklist.append(1)
+	else: 
+		o.erratklist.append(0)								  
+	if (o.atklist[i] == 0) and (o.obspos.tatk < o.listidln[i+k+1]):
+		o.errnotatklist.append(1)
+	else:
+		o.errnotatklist.append(0)
+o.logfileobs(f)
+o.logfileprev(f,k)
+plt.figure('Observer atk', figsize=(15,10))
+plt.subplot(311)
+plt.plot(o.atklist)
+plt.xlabel('t')
+plt.ylabel('Obs atk')
+plt.title('Observer possible attack')
+plt.subplot(312)
+plt.plot(o.erratklist)
+plt.title('Observer error prediction attack (1=error)')
+plt.ylabel('Error atk')
+plt.xlabel('t')
+plt.subplot(313)
+plt.plot(o.errnotatklist)
+plt.title('Observer error prediction not attack (1=error)')
+plt.ylabel('Error not atk')
+plt.xlabel('t')
+nameatk='log/virt/graf'
+os.makedirs(os.path.dirname(nameatk), exist_ok=True)
+plt.savefig(nameatk)
+#plt.show()
+plt.close()
+f.close()
+print('no virt')
 '''
 nod=25	
 env=Environment(nod, ed=1)
