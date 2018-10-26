@@ -15,6 +15,7 @@ class Node:
 		self.nidlavg=0				#media adleness
 		self.tatk=tatk					#tempo attacco nodo
 		self.deep=0					#deep
+		self.vf=0
 		
 
 	def addadj(self,n):
